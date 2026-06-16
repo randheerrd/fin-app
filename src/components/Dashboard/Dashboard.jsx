@@ -1,4 +1,4 @@
-import { Plus, Zap } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import HeroNumber from './HeroNumber';
 import FilterChips from './FilterChips';
 import AtmCard from './AtmCard';
@@ -25,12 +25,10 @@ export default function Dashboard({
   const dayOfMonth = getDayOfMonth();
   const daysInMonth = getDaysInMonth();
 
-  // Filtered transactions based on active filter
   const filteredTransactions = activeFilter
     ? transactions.filter(t => t.category === activeFilter)
     : transactions;
 
-  // Filtered goals (only show goals linked to active filter if filter is active)
   const filteredGoals = activeFilter
     ? goals.filter(g => g.linked && g.linked.includes(activeFilter))
     : goals;
@@ -39,16 +37,16 @@ export default function Dashboard({
     <div className="flex-1 overflow-auto bg-bg">
       <div className="max-w-7xl mx-auto">
         {/* Hero Section */}
-        <div className="px-8 py-12 border-b border-line">
+        <div className="px-8 py-12 border-b border-neutral-700">
           <div className="mb-4">
-            <p className="text-text-faint text-sm">{getCurrentMonthYear()} · Day {dayOfMonth} of {daysInMonth}</p>
+            <p className="text-text-tertiary text-sm font-medium">{getCurrentMonthYear()} • Day {dayOfMonth} of {daysInMonth}</p>
           </div>
           <HeroNumber
             amount={activeFilter
               ? filteredTransactions.filter(t => !t.atm).reduce((sum, t) => sum + t.amount, 0)
               : totalSpent}
           />
-          <p className="text-text-dim mt-4 text-lg">
+          <p className="text-text-secondary mt-4 text-base leading-relaxed">
             {manualMode
               ? `across ${transactions.length} transaction${transactions.length !== 1 ? 's' : ''} logged.${transactions.length > 0 ? ` Biggest spend so far: ${CATEGORIES.find(c => c.id === topCategories[0]?.category)?.name}.` : ''}`
               : transactions.length === 0
@@ -59,13 +57,13 @@ export default function Dashboard({
 
         {/* Filter Context */}
         {activeFilter && (
-          <div className="px-8 py-4 bg-bg-raise border-b border-line flex items-center justify-between">
-            <p className="text-text-dim text-sm">
-              Showing {CATEGORIES.find(c => c.id === activeFilter)?.name} · ₹{filteredTransactions.filter(t => !t.atm).reduce((sum, t) => sum + t.amount, 0).toLocaleString('en-IN')}
+          <div className="px-8 py-4 bg-bg-secondary border-b border-neutral-700 flex items-center justify-between">
+            <p className="text-text-secondary text-sm">
+              Showing {CATEGORIES.find(c => c.id === activeFilter)?.name} • ₹{filteredTransactions.filter(t => !t.atm).reduce((sum, t) => sum + t.amount, 0).toLocaleString('en-IN')}
             </p>
             <button
               onClick={() => setActiveFilter(null)}
-              className="text-sage hover:text-sage/80 text-sm font-medium transition-colors"
+              className="text-emerald hover:text-emerald-light text-sm font-semibold transition-colors"
             >
               Clear filter
             </button>
@@ -84,18 +82,15 @@ export default function Dashboard({
         {/* Content Grid */}
         <div className="px-8 py-8">
           {transactions.length === 0 && !manualMode ? (
-            // Empty state for bank-connected mode
             <div className="text-center py-12">
-              <p className="text-text-dim mb-6">Your bank data will appear here once imported</p>
-              <div className="flex gap-4 justify-center">
-                <button
-                  onClick={onAddExpense}
-                  className="flex items-center gap-2 px-4 py-2 bg-sage text-bg rounded-lg font-medium hover:bg-sage/90 transition-colors"
-                >
-                  <Plus size={18} />
-                  Add first expense
-                </button>
-              </div>
+              <p className="text-text-secondary mb-6">Your bank data will appear here once imported</p>
+              <button
+                onClick={onAddExpense}
+                className="inline-flex items-center gap-2 px-6 py-3 bg-emerald text-bg rounded-lg font-semibold hover:bg-emerald-dark transition-all shadow-md"
+              >
+                <Plus size={18} />
+                Add first expense
+              </button>
             </div>
           ) : (
             <div className="grid grid-cols-2 gap-8 mb-8">
@@ -131,17 +126,17 @@ export default function Dashboard({
 
                 {/* Goals Stats */}
                 {goals.length > 0 && (
-                  <div className="bg-bg-card border border-line rounded-lg p-6">
+                  <div className="bg-bg-secondary border border-neutral-700 rounded-lg p-6 mt-6">
                     <div className="space-y-4">
-                      <div className="flex justify-between items-center pb-4 border-b border-line">
-                        <span className="text-text-dim text-sm">{goals.length} active goal{goals.length !== 1 ? 's' : ''}</span>
-                        <span className="text-text-primary font-medium">
+                      <div className="flex justify-between items-center pb-4 border-b border-neutral-700">
+                        <span className="text-text-tertiary text-sm">{goals.length} active goal{goals.length !== 1 ? 's' : ''}</span>
+                        <span className="text-emerald font-semibold">
                           {goals.filter(g => g.status === 'on-track').length} on track
                         </span>
                       </div>
                       <div className="text-right">
-                        <p className="text-text-faint text-xs mb-1">Total saved</p>
-                        <p className="font-serif text-2xl text-text-primary">
+                        <p className="text-text-tertiary text-xs mb-1">Total saved</p>
+                        <p className="font-serif text-2xl text-text-primary font-bold">
                           ₹{goals.reduce((sum, g) => sum + (g.saved || 0), 0).toLocaleString('en-IN')}
                         </p>
                       </div>

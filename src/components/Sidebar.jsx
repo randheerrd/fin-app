@@ -1,4 +1,5 @@
-import { Plus, BarChart3, TrendingUp, RefreshCw, Eye, Settings, RotateCcw } from 'lucide-react';
+import { Plus, BarChart3, TrendingUp, Eye, RefreshCw, Settings, RotateCcw } from 'lucide-react';
+import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 
 const NAV_ITEMS = [
   { id: 'dashboard', label: 'Dashboard', icon: BarChart3 },
@@ -11,10 +12,11 @@ const NAV_ITEMS = [
 
 export default function Sidebar({ activeView, setActiveView, onAddExpense, onRestart }) {
   return (
-    <div className="w-[216px] bg-bg-raise border-r border-line flex flex-col">
+    <div className="w-64 bg-bg-secondary border-r border-neutral-700 flex flex-col h-screen">
       {/* Header */}
-      <div className="p-6 border-b border-line">
-        <h1 className="font-serif text-2xl text-text-primary">Fin-app</h1>
+      <div className="p-6 border-b border-neutral-700">
+        <h1 className="font-serif text-2xl font-bold text-emerald-light">Fin-app</h1>
+        <p className="text-text-tertiary text-sm mt-1">Financial clarity</p>
       </div>
 
       {/* Nav items */}
@@ -26,10 +28,10 @@ export default function Sidebar({ activeView, setActiveView, onAddExpense, onRes
             <button
               key={item.id}
               onClick={() => setActiveView(item.id)}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 ${
                 isActive
-                  ? 'bg-sage text-bg'
-                  : 'text-text-dim hover:bg-bg-card'
+                  ? 'bg-emerald text-bg shadow-md'
+                  : 'text-text-secondary hover:bg-bg-tertiary'
               }`}
             >
               <Icon size={18} />
@@ -40,21 +42,37 @@ export default function Sidebar({ activeView, setActiveView, onAddExpense, onRes
       </nav>
 
       {/* Footer actions */}
-      <div className="border-t border-line p-4 space-y-2">
+      <div className="border-t border-neutral-700 p-4 space-y-2">
         <button
           onClick={onAddExpense}
-          className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-sage text-bg rounded-lg text-sm font-medium hover:bg-sage/90 transition-colors"
+          className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-emerald text-bg rounded-lg text-sm font-semibold hover:bg-emerald-dark transition-all duration-200 shadow-md"
         >
           <Plus size={18} />
-          <span>N for expense</span>
+          <span>Add Expense</span>
         </button>
-        <button
-          onClick={onRestart}
-          className="w-full flex items-center justify-center gap-2 px-4 py-2 text-text-dim hover:bg-bg-card rounded-lg text-sm font-medium transition-colors"
-        >
-          <RotateCcw size={18} />
-          <span>Restart</span>
-        </button>
+
+        <DropdownMenu.Root>
+          <DropdownMenu.Trigger asChild>
+            <button className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-bg-tertiary text-text-secondary rounded-lg text-sm font-medium hover:bg-neutral-700 transition-all duration-200">
+              <RotateCcw size={18} />
+              <span>Menu</span>
+            </button>
+          </DropdownMenu.Trigger>
+
+          <DropdownMenu.Portal>
+            <DropdownMenu.Content
+              className="bg-bg-secondary border border-neutral-700 rounded-lg shadow-lg p-2 z-50 min-w-max"
+              sideOffset={5}
+            >
+              <DropdownMenu.Item
+                onClick={onRestart}
+                className="px-4 py-2 text-sm text-text-secondary hover:text-text-primary hover:bg-bg-tertiary rounded cursor-pointer transition-colors"
+              >
+                Restart Demo
+              </DropdownMenu.Item>
+            </DropdownMenu.Content>
+          </DropdownMenu.Portal>
+        </DropdownMenu.Root>
       </div>
     </div>
   );
