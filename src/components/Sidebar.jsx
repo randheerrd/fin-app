@@ -8,7 +8,7 @@ const NAV_ITEMS = [
   { id: 'insights', label: 'Insights', icon: Bookmark },
 ];
 
-export default function Sidebar({ activeView, setActiveView, onSearch, onRestart }) {
+export default function Sidebar({ activeView, setActiveView, onSearch }) {
   // Every row shares the same 20px left gutter: outer px-2 (8) + inner px-3 (12).
   return (
     <div className="w-56 bg-[#0E3F2E] flex flex-col h-screen fixed left-0 top-0 z-10 px-2">
@@ -44,14 +44,6 @@ export default function Sidebar({ activeView, setActiveView, onSearch, onRestart
           );
         })}
       </nav>
-
-      {/* Restart (demo helper) */}
-      <button
-        onClick={onRestart}
-        className="px-3 py-2 text-white/25 text-xs hover:text-white/50 transition-colors text-left"
-      >
-        Restart demo
-      </button>
 
       {/* Profile → settings */}
       <button

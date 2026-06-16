@@ -467,26 +467,6 @@ function App() {
     }
   };
 
-  const handleRestart = () => {
-    if (confirm('Restart demo? All data will be lost.')) {
-      setTransactions([]);
-      setGoals([]);
-      setBanks([]);
-      setRecurring([]);
-      setAtmRemaining(0);
-      setManualMode(false);
-      setOnboardingDone(false);
-      setLandingDone(false);
-      setAuthScreen('landing');
-      setActiveView('dashboard');
-      setActiveFilter(null);
-      setSipDismissed(false);
-      setShowAddExpense(false);
-      setShowAtmSplit(false);
-      showToast('Demo restarted', 'success');
-    }
-  };
-
   // Setu AA import screen (after returning from the bank approval page).
   if (aaImport !== 'idle') {
     return (
@@ -522,7 +502,6 @@ function App() {
           setActiveView={setActiveView}
           onAddExpense={() => setShowAddExpense(true)}
           onSearch={() => setShowSearch(true)}
-          onRestart={handleRestart}
         />
       )}
 
