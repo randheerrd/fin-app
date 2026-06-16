@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { X, Trash2, Check } from 'lucide-react';
 import { CATEGORIES } from '../../data/categories';
 import { getToday } from '../../lib/utils';
@@ -6,6 +6,11 @@ import CategoryIcon from '../CategoryIcon';
 
 export default function AddExpenseModal({ onClose, onSave, onDelete, initial }) {
   const isEdit = Boolean(initial);
+  useEffect(() => {
+    const h = (e) => e.key === 'Escape' && onClose();
+    window.addEventListener('keydown', h);
+    return () => window.removeEventListener('keydown', h);
+  }, [onClose]);
   const [amount, setAmount] = useState(initial ? String(initial.amount) : '');
   const [category, setCategory] = useState(initial?.category || 'food');
   const [date, setDate] = useState(initial?.date || getToday());
@@ -28,7 +33,10 @@ export default function AddExpenseModal({ onClose, onSave, onDelete, initial }) 
     'w-full px-4 py-3 border border-[#e5e7eb] rounded-lg text-sm text-[#111827] outline-none focus:border-[#0E3F2E] placeholder:text-[#9ca3af]';
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+    <div
+      className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4"
+      onClick={(e) => e.target === e.currentTarget && onClose()}
+    >
       <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-xl">
         <div className="flex justify-between items-start px-8 pt-7 pb-2">
           <h2 className="font-display text-3xl text-[#111827]">{isEdit ? 'Edit expense' : 'Add expense'}</h2>

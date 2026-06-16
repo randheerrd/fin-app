@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { X, Search, Building2, Lock, ChevronDown, Check } from 'lucide-react';
 import BrandLogo from '../BrandLogo';
 import { INDIAN_BANKS, ACCOUNT_TYPES } from '../../data/banks';
@@ -6,6 +6,15 @@ import { INDIAN_BANKS, ACCOUNT_TYPES } from '../../data/banks';
 export default function AddBankModal({ onClose, onAdd }) {
   const [query, setQuery] = useState('');
   const [open, setOpen] = useState(false);
+  useEffect(() => {
+    const h = (e) => {
+      if (e.key !== 'Escape') return;
+      if (open) setOpen(false);
+      else onClose();
+    };
+    window.addEventListener('keydown', h);
+    return () => window.removeEventListener('keydown', h);
+  }, [open, onClose]);
   const [bank, setBank] = useState(null);
   const [type, setType] = useState(ACCOUNT_TYPES[0]);
   const [acctNo, setAcctNo] = useState('');
@@ -21,7 +30,10 @@ export default function AddBankModal({ onClose, onAdd }) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+    <div
+      className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4"
+      onClick={(e) => e.target === e.currentTarget && onClose()}
+    >
       <div className="bg-white rounded-2xl max-w-lg w-full shadow-xl">
         <div className="flex items-center justify-between px-6 pt-6 pb-3">
           <h2 className="font-display text-2xl text-[#111827]">Add a bank</h2>
