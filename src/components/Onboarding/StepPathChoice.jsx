@@ -1,47 +1,40 @@
-import { TrendingUp, Target } from 'lucide-react';
+import { BarChart2, Target, ChevronRight } from 'lucide-react';
 
 export default function StepPathChoice({ onChoose }) {
   return (
-    <div className="max-w-2xl w-full px-8">
-      <div className="text-center mb-16">
-        <div className="flex justify-center gap-2 mb-12">
-          {[1, 2, 3, 4, 5].map(i => (
-            <div key={i} className={`w-2 h-2 rounded-full ${i === 1 ? 'bg-accent' : 'bg-bg-border'}`} />
-          ))}
-        </div>
-        <h1 className="font-serif text-4xl font-bold text-text-primary mb-4">What do you want to do first?</h1>
-        <p className="text-text-secondary">FinApp shapes itself around the answer. You can do both later.</p>
+    <div>
+      <div className="text-center mb-8">
+        <h1 className="text-2xl font-bold text-[#111827] mb-2">What do you want to do first?</h1>
+        <p className="text-[#6b7280] text-sm">FinApp shapes itself around the answer. You can do both later.</p>
       </div>
 
-      <div className="space-y-4">
+      <div className="space-y-3">
         <button
           onClick={() => onChoose('track')}
-          className="w-full p-6 bg-white border-2 border-bg-border rounded-lg hover:border-accent hover:bg-blue-50 transition-all text-left group"
+          className="w-full p-5 bg-white border border-[#e5e7eb] rounded-xl hover:border-[#1B3A2F] hover:shadow-sm transition-all text-left group flex items-center gap-4"
         >
-          <div className="flex items-start gap-4">
-            <div className="p-3 bg-blue-50 rounded-lg group-hover:bg-blue-100 transition-colors flex-shrink-0">
-              <TrendingUp className="text-accent" size={24} />
-            </div>
-            <div>
-              <h3 className="font-semibold text-text-primary text-lg mb-1">Understand my spending</h3>
-              <p className="text-text-secondary text-sm">See where the money actually goes, each month</p>
-            </div>
+          <div className="w-10 h-10 rounded-lg border border-[#e5e7eb] flex items-center justify-center flex-shrink-0 group-hover:border-[#1B3A2F]/30">
+            <BarChart2 size={20} className="text-[#6b7280]" />
           </div>
+          <div className="flex-1">
+            <p className="font-semibold text-[#111827] text-sm">Understand my spending</p>
+            <p className="text-[#6b7280] text-xs mt-0.5">See where the money actually goes, each month</p>
+          </div>
+          <ChevronRight size={18} className="text-[#9ca3af] flex-shrink-0" />
         </button>
 
         <button
           onClick={() => onChoose('goal')}
-          className="w-full p-6 bg-white border-2 border-bg-border rounded-lg hover:border-accent hover:bg-blue-50 transition-all text-left group"
+          className="w-full p-5 bg-white border border-[#e5e7eb] rounded-xl hover:border-[#1B3A2F] hover:shadow-sm transition-all text-left group flex items-center gap-4"
         >
-          <div className="flex items-start gap-4">
-            <div className="p-3 bg-blue-50 rounded-lg group-hover:bg-blue-100 transition-colors flex-shrink-0">
-              <Target className="text-accent" size={24} />
-            </div>
-            <div>
-              <h3 className="font-semibold text-text-primary text-lg mb-1">Works towards a goal</h3>
-              <p className="text-text-secondary text-sm">connect everyday spending to something that matters</p>
-            </div>
+          <div className="w-10 h-10 rounded-lg border border-[#e5e7eb] flex items-center justify-center flex-shrink-0 group-hover:border-[#1B3A2F]/30">
+            <Target size={20} className="text-[#6b7280]" />
           </div>
+          <div className="flex-1">
+            <p className="font-semibold text-[#111827] text-sm">Works towards a goal</p>
+            <p className="text-[#6b7280] text-xs mt-0.5">connect everyday spending to something that matters</p>
+          </div>
+          <ChevronRight size={18} className="text-[#9ca3af] flex-shrink-0" />
         </button>
       </div>
     </div>

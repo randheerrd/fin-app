@@ -17,35 +17,29 @@ export default function StepImport({ onComplete }) {
       const timeout = setTimeout(() => {
         setMessage(step.message);
         setProgress(step.progress);
-
         if (step.progress === 100) {
           setTimeout(onComplete, 800);
         }
       }, step.delay);
-
       return () => clearTimeout(timeout);
     });
   }, [onComplete]);
 
   return (
-    <div className="max-w-md w-full px-4">
-      <div className="mb-12">
-        <h1 className="font-serif text-3xl text-text-primary mb-2">Importing your data</h1>
-        <p className="text-text-dim">This usually takes 30 seconds</p>
+    <div className="py-8">
+      <div className="mb-8">
+        <h1 className="text-2xl font-bold text-[#111827] mb-2">Importing your data</h1>
+        <p className="text-[#6b7280] text-sm">This usually takes 30 seconds</p>
       </div>
 
-      <div className="space-y-6 mb-8">
-        <div>
-          <div className="w-full bg-bg-card rounded-full h-2 overflow-hidden">
-            <div
-              className="h-full bg-sage transition-all duration-300"
-              style={{ width: `${progress}%` }}
-            />
-          </div>
-          <p className="text-xs text-text-faint mt-2">{progress}%</p>
+      <div className="space-y-4">
+        <div className="w-full bg-[#f3f4f6] rounded-full h-1.5 overflow-hidden">
+          <div
+            className="h-full bg-[#1B3A2F] transition-all duration-500 rounded-full"
+            style={{ width: `${progress}%` }}
+          />
         </div>
-
-        <p className="text-sm text-text-dim">{message}</p>
+        <p className="text-sm text-[#6b7280]">{message}</p>
       </div>
     </div>
   );

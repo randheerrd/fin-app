@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import './index.css';
+import Landing from './components/Landing';
 import Sidebar from './components/Sidebar';
 import OnboardingShell from './components/Onboarding/OnboardingShell';
 import Dashboard from './components/Dashboard/Dashboard';
@@ -25,6 +26,7 @@ function App() {
   const [atmRemaining, setAtmRemaining] = useState(0);
   const [manualMode, setManualMode] = useState(false);
   const [onboardingDone, setOnboardingDone] = useState(false);
+  const [landingDone, setLandingDone] = useState(false);
 
   // UI state
   const [activeView, setActiveView] = useState('dashboard');
@@ -36,6 +38,14 @@ function App() {
   const [showAddExpense, setShowAddExpense] = useState(false);
   const [showAtmSplit, setShowAtmSplit] = useState(false);
   const [toast, setToast] = useState(null);
+  const mainContentRef = useRef(null);
+
+  // Reset scroll when view changes or onboarding completes
+  useEffect(() => {
+    if (mainContentRef.current) {
+      mainContentRef.current.scrollTop = 0;
+    }
+  }, [activeView, onboardingDone]);
 
   // Handle keyboard shortcuts
   useEffect(() => {
@@ -170,6 +180,10 @@ function App() {
 
   // View content
   const renderView = () => {
+    if (!landingDone) {
+      return <Landing onStart={() => setLandingDone(true)} />;
+    }
+
     if (!onboardingDone) {
       return (
         <OnboardingShell
@@ -269,6 +283,7 @@ function App() {
       setAtmRemaining(0);
       setManualMode(false);
       setOnboardingDone(false);
+      setLandingDone(false);
       setActiveView('dashboard');
       setActiveFilter(null);
       setSipDismissed(false);
@@ -291,7 +306,7 @@ function App() {
       )}
 
       {/* Main content */}
-      <div className={`flex-1 overflow-auto transition-all ${onboardingDone ? 'ml-64' : ''}`}>
+      <div ref={mainContentRef} className={`flex-1 overflow-auto transition-all ${onboardingDone ? 'ml-56' : ''}`}>
         {renderView()}
       </div>
 

@@ -1,56 +1,50 @@
-import { ChevronLeft, Lock } from 'lucide-react';
-
-const CONSENT_ROWS = [
-  { label: "What's shared", value: 'Transactions only' },
-  { label: 'Time period', value: 'Last 6 months' },
-  { label: 'Refreshed', value: 'Daily' },
-  { label: 'Valid until', value: 'You revoke' },
-  { label: 'We can see', value: 'Transactions only' },
-];
+import { ArrowLeft, Lock, Eye, RefreshCw, Clock, Shield } from 'lucide-react';
 
 export default function StepConsent({ onAccept, onBack }) {
   return (
-    <div className="max-w-md w-full px-4">
-      <button
-        onClick={onBack}
-        className="flex items-center gap-2 text-text-dim hover:text-text-primary mb-8 transition-colors"
-      >
-        <ChevronLeft size={18} />
-        <span>Back</span>
-      </button>
-
-      <div className="mb-8">
-        <h1 className="font-serif text-3xl text-text-primary mb-2">Allow access</h1>
-        <p className="text-text-dim">Your bank will ask you to confirm this access</p>
+    <div>
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-[#111827] mb-2">Here's exactly what you're sharing</h1>
+        <p className="text-[#6b7280] text-sm">Plain language, no fine print. This is the whole consent.</p>
       </div>
 
-      <div className="bg-bg-card border border-line rounded-lg overflow-hidden mb-8">
-        <div className="divide-y divide-line">
-          {CONSENT_ROWS.map((row, i) => (
-            <div key={i} className="p-4 flex justify-between items-center">
-              <span className="text-sm text-text-dim">{row.label}</span>
-              <span className="text-sm font-medium text-text-primary">{row.value}</span>
+      <div className="space-y-3 mb-6">
+        {[
+          { icon: Eye, label: "What's shared", value: 'Transactions only' },
+          { icon: Clock, label: 'Time period', value: 'Last 6 months' },
+          { icon: RefreshCw, label: 'Refreshed', value: 'Daily' },
+          { icon: Shield, label: 'We can see', value: 'Transactions only' },
+        ].map(({ icon: Icon, label, value }, i) => (
+          <div key={i} className="flex items-center justify-between py-3 border-b border-[#f3f4f6] last:border-0">
+            <div className="flex items-center gap-3">
+              <Icon size={15} className="text-[#9ca3af]" />
+              <span className="text-sm text-[#6b7280]">{label}</span>
             </div>
-          ))}
-        </div>
-      </div>
-
-      <div className="bg-bg-card border border-line rounded-lg p-4 mb-8 space-y-2">
-        <div className="flex items-start gap-3">
-          <Lock size={16} className="text-sage mt-1 flex-shrink-0" />
-          <div className="text-xs text-text-dim">
-            <p className="font-medium text-text-primary mb-1">🔒 Encrypted & read-only</p>
-            <p>256-bit encryption. We can see transactions, never move money. Revoke anytime.</p>
+            <span className="text-sm font-medium text-[#111827]">{value}</span>
           </div>
-        </div>
+        ))}
       </div>
 
-      <button
-        onClick={onAccept}
-        className="w-full bg-sage text-bg py-3 rounded-lg font-medium hover:bg-sage/90 transition-colors"
-      >
-        Allow & connect
-      </button>
+      <p className="text-xs text-[#9ca3af] text-center mb-8 flex items-center justify-center gap-1.5">
+        <Lock size={11} />
+        This is encrypted · Read-only · Revoke anytime in Settings
+      </p>
+
+      <div className="flex items-center justify-between">
+        <button
+          onClick={onBack}
+          className="flex items-center gap-1.5 text-sm text-[#6b7280] hover:text-[#111827] transition-colors"
+        >
+          <ArrowLeft size={16} />
+          Back
+        </button>
+        <button
+          onClick={onAccept}
+          className="px-5 py-2.5 bg-[#1B3A2F] text-white text-sm font-medium rounded-lg hover:bg-[#142D24] transition-colors"
+        >
+          Allow & connect
+        </button>
+      </div>
     </div>
   );
 }

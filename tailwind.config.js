@@ -7,18 +7,23 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Design System from Screenshots
+        // Figma Design System — white + dark green
+        primary: {
+          DEFAULT: '#1B3A2F',
+          hover: '#142D24',
+          light: '#2d6b55',
+        },
         sidebar: {
-          DEFAULT: '#1a4d3e',
-          light: '#2d8b79',
-          hover: '#1f5a4c',
+          DEFAULT: '#1B3A2F',
+          light: '#2d6b55',
+          hover: '#142D24',
         },
         accent: {
-          DEFAULT: '#2d8b79',
-          light: '#4da899',
-          dark: '#1a4d3e',
+          DEFAULT: '#1B3A2F',
+          light: '#2d6b55',
+          dark: '#142D24',
         },
-        success: '#2d8b79',
+        success: '#16a34a',
         warning: '#f97316',
         danger: '#ef4444',
         text: {

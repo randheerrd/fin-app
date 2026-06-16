@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ChevronLeft, Lock } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Lock } from 'lucide-react';
 
 export default function StepMobileEntry({ onSubmit, onBack }) {
   const [mobile, setMobile] = useState('');
@@ -11,59 +11,55 @@ export default function StepMobileEntry({ onSubmit, onBack }) {
   };
 
   return (
-    <div className="max-w-md w-full px-4">
-      {onBack && (
-        <button
-          onClick={onBack}
-          className="flex items-center gap-2 text-text-dim hover:text-text-primary mb-8 transition-colors"
-        >
-          <ChevronLeft size={18} />
-          <span>Back to setup</span>
-        </button>
-      )}
-
+    <div>
       <div className="mb-8">
-        <h1 className="font-serif text-3xl text-text-primary mb-2">Link your bank</h1>
-        <p className="text-text-dim text-sm">Enter your phone number linked to your bank account</p>
-        <p className="text-text-faint text-xs mt-2">💡 End with 0000 to see the no-accounts state</p>
+        <h1 className="text-2xl font-bold text-[#111827] mb-2">Connect your bank</h1>
+        <p className="text-[#6b7280] text-sm">
+          The Account Aggregator finds your accounts by your registered mobile number,
+          no hunting through a list of 50 banks.
+        </p>
       </div>
 
-      <div className="space-y-6 mb-8">
-        <div>
-          <label className="block text-sm text-text-dim mb-2">Phone number</label>
-          <div className="flex items-center gap-2 bg-bg-card border border-line rounded-lg px-4 py-3">
-            <span className="text-lg text-text-dim">+91</span>
-            <input
-              autoFocus
-              type="tel"
-              maxLength="10"
-              placeholder="9876543210"
-              value={mobile}
-              onChange={(e) => setMobile(e.target.value.replace(/\D/g, '').slice(0, 10))}
-              className="flex-1 bg-transparent text-lg text-text-primary outline-none"
-            />
-          </div>
-          <p className="text-xs text-text-faint mt-2">{mobile.length}/10 digits</p>
+      <div className="mb-6">
+        <label className="block text-sm font-medium text-[#374151] mb-1.5">Mobile No.</label>
+        <div className="flex items-center border border-[#e5e7eb] rounded-lg overflow-hidden focus-within:border-[#1B3A2F] focus-within:ring-1 focus-within:ring-[#1B3A2F]/20 transition-colors">
+          <span className="pl-4 pr-2 py-2.5 text-[#6b7280] text-sm select-none">+91</span>
+          <input
+            autoFocus
+            type="tel"
+            maxLength="10"
+            placeholder="9876543210"
+            value={mobile}
+            onChange={(e) => setMobile(e.target.value.replace(/\D/g, '').slice(0, 10))}
+            onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
+            className="flex-1 pr-4 py-2.5 text-[#111827] text-sm placeholder-[#9ca3af] outline-none bg-transparent"
+          />
         </div>
+        <p className="text-[#9ca3af] text-xs mt-2 flex items-center gap-1">
+          <Lock size={11} />
+          Read-only access · RBI-regulated AA network · Your credentials never touch our servers
+        </p>
       </div>
 
-      <div className="bg-bg-card border border-line rounded-lg p-4 mb-8 space-y-2">
-        <div className="flex items-start gap-3">
-          <Lock size={16} className="text-sage mt-1 flex-shrink-0" />
-          <div className="text-xs text-text-dim">
-            <p className="font-medium text-text-primary mb-1">🔒 Read-only access</p>
-            <p>RBI-regulated Account Aggregator network. Your credentials never touch our servers.</p>
-          </div>
-        </div>
+      <div className="flex items-center justify-between">
+        {onBack ? (
+          <button
+            onClick={onBack}
+            className="flex items-center gap-1.5 text-sm text-[#6b7280] hover:text-[#111827] transition-colors"
+          >
+            <ArrowLeft size={16} />
+            Back
+          </button>
+        ) : <div />}
+        <button
+          onClick={handleSubmit}
+          disabled={mobile.length !== 10}
+          className="flex items-center gap-2 px-5 py-2.5 bg-[#1B3A2F] text-white text-sm font-medium rounded-lg hover:bg-[#142D24] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+        >
+          Find my account
+          <ArrowRight size={16} />
+        </button>
       </div>
-
-      <button
-        onClick={handleSubmit}
-        disabled={mobile.length !== 10}
-        className="w-full bg-sage text-bg py-3 rounded-lg font-medium hover:bg-sage/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-      >
-        Continue
-      </button>
     </div>
   );
 }

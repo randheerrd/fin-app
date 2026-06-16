@@ -1,65 +1,62 @@
 import { useState } from 'react';
-import { ChevronLeft } from 'lucide-react';
+import { ArrowLeft, ArrowRight } from 'lucide-react';
 
 export default function StepTrackSetup({ onAction }) {
-  const [income, setIncome] = useState('100,000');
-  const [budget, setBudget] = useState('50,000');
+  const [income, setIncome] = useState('');
+  const [budget, setBudget] = useState('');
 
   const handleContinue = () => {
-    onAction('continue');
-  };
-
-  const handleSkip = () => {
-    onAction('skip');
+    onAction('continue', {
+      income: parseInt(income.replace(/,/g, '')) || 100000,
+      budget: parseInt(budget.replace(/,/g, '')) || 50000,
+    });
   };
 
   return (
-    <div className="max-w-2xl w-full px-8">
-      <div className="flex justify-center gap-2 mb-12">
-        {[1, 2, 3, 4, 5].map(i => (
-          <div key={i} className={`w-2 h-2 rounded-full ${i === 2 ? 'bg-accent' : 'bg-bg-border'}`} />
-        ))}
+    <div>
+      <div className="mb-8">
+        <h1 className="text-2xl font-bold text-[#111827] mb-2">Two numbers to Start</h1>
+        <p className="text-[#6b7280] text-sm">These anchor your dashboard , you can change them anytime in settings</p>
       </div>
 
-      <div className="mb-12">
-        <h1 className="font-serif text-4xl font-bold text-text-primary mb-4">Two numbers to start</h1>
-        <p className="text-text-secondary">These anchor your dashboard. You can change them anytime in settings.</p>
-      </div>
-
-      <div className="space-y-6 mb-8">
+      <div className="space-y-5 mb-8">
         <div>
-          <label className="block text-sm text-text-secondary font-medium mb-3">Monthly Income</label>
+          <label className="block text-sm font-medium text-[#374151] mb-1.5">Monthly Income</label>
           <input
-            type="number"
+            type="text"
+            placeholder="1,00,000"
             value={income}
-            onChange={(e) => setIncome(e.target.value)}
-            className="w-full px-4 py-3 border-2 border-bg-border rounded-lg text-text-primary outline-none focus:border-accent bg-white"
+            onChange={(e) => setIncome(e.target.value.replace(/[^\d,]/g, ''))}
+            className="w-full px-4 py-2.5 border border-[#e5e7eb] rounded-lg text-[#111827] text-sm placeholder-[#9ca3af] focus:border-[#1B3A2F] focus:ring-1 focus:ring-[#1B3A2F]/20 transition-colors"
           />
         </div>
 
         <div>
-          <label className="block text-sm text-text-secondary font-medium mb-3">Monthly Budget</label>
+          <label className="block text-sm font-medium text-[#374151] mb-1.5">Monthly Budget</label>
           <input
-            type="number"
+            type="text"
+            placeholder="50,000"
             value={budget}
-            onChange={(e) => setBudget(e.target.value)}
-            className="w-full px-4 py-3 border-2 border-bg-border rounded-lg text-text-primary outline-none focus:border-accent bg-white"
+            onChange={(e) => setBudget(e.target.value.replace(/[^\d,]/g, ''))}
+            className="w-full px-4 py-2.5 border border-[#e5e7eb] rounded-lg text-[#111827] text-sm placeholder-[#9ca3af] focus:border-[#1B3A2F] focus:ring-1 focus:ring-[#1B3A2F]/20 transition-colors"
           />
         </div>
       </div>
 
-      <div className="space-y-3">
+      <div className="flex items-center justify-between">
         <button
-          onClick={handleContinue}
-          className="w-full bg-accent text-white py-3 rounded-lg font-semibold hover:bg-accent-dark transition-colors"
+          onClick={() => onAction('skip')}
+          className="flex items-center gap-1.5 text-sm text-[#6b7280] hover:text-[#111827] transition-colors"
         >
-          Connect → Continue
+          <ArrowLeft size={16} />
+          Back
         </button>
         <button
-          onClick={handleSkip}
-          className="w-full border-2 border-bg-border text-text-primary py-3 rounded-lg font-semibold hover:bg-bg-secondary transition-colors"
+          onClick={handleContinue}
+          className="flex items-center gap-2 px-5 py-2.5 bg-[#1B3A2F] text-white text-sm font-medium rounded-lg hover:bg-[#142D24] transition-colors"
         >
-          Start manually instead
+          Continue
+          <ArrowRight size={16} />
         </button>
       </div>
     </div>
