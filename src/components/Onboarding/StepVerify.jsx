@@ -140,7 +140,7 @@ export default function StepVerify({ onVerified, onBack }) {
 
       <div className="flex items-center justify-between">
         <button
-          onClick={onBack}
+          onClick={() => (stage === 'otp' ? setStage('phone') : onBack())}
           className="flex items-center gap-1.5 text-sm text-[#6b7280] hover:text-[#111827] transition-colors"
         >
           <ArrowLeft size={16} />

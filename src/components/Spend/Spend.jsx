@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, ChevronDown, Calendar, ArrowDown } from 'lucide-react';
+import { Plus, ChevronDown, Calendar, ArrowDown, X } from 'lucide-react';
 import { CATEGORIES, getCategoryChip } from '../../data/categories';
 import DuplicateBanner from './DuplicateBanner';
 import MerchantLogo from '../MerchantLogo';
@@ -70,6 +70,8 @@ export default function Spend({
   onAddExpense,
   onUpdateTransaction,
   onDeleteTransaction,
+  searchQuery = '',
+  onClearSearch,
 }) {
   const [category, setCategory] = useState('all');
   const [source, setSource] = useState('all');
@@ -105,7 +107,10 @@ export default function Spend({
     return true;
   };
 
+  const search = searchQuery.trim().toLowerCase();
   const filtered = sorted.filter((t) => {
+    if (search && !t.merchant.toLowerCase().includes(search) && !catName(t.category).toLowerCase().includes(search))
+      return false;
     if (category !== 'all' && t.category !== category) return false;
     if (source === 'manual' && t.source !== 'manual') return false;
     if (source === 'bank' && t.source !== 'bank') return false;
@@ -147,6 +152,18 @@ export default function Spend({
           Add Expense
         </button>
       </div>
+
+      {search && (
+        <div className="flex items-center gap-2 mb-5">
+          <span className="inline-flex items-center gap-2 px-3 py-1.5 bg-[#F0F7F3] border border-[#0E3F2E]/15 rounded-lg text-sm text-[#0E3F2E] font-medium">
+            Search: “{searchQuery}”
+            <button onClick={onClearSearch} className="hover:text-[#0a3122]" aria-label="Clear search">
+              <X size={14} />
+            </button>
+          </span>
+          <span className="text-xs text-[#9ca3af]">{filtered.length} result{filtered.length === 1 ? '' : 's'}</span>
+        </div>
+      )}
 
       {dup && (
         <DuplicateBanner

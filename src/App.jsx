@@ -52,6 +52,7 @@ function App() {
   // UI state
   const [activeView, setActiveView] = useState('dashboard');
   const [activeFilter] = useState(null);
+  const [spendSearch, setSpendSearch] = useState(''); // merchant text from global search → filters Spend
   const [sipDismissed, setSipDismissed] = useState(false);
 
   // Modal state
@@ -261,13 +262,15 @@ function App() {
     localStorage.removeItem('aa_pending');
   };
 
-  // Onboarding finished (after phone verification). No bank yet — manual mode;
-  // bank linking happens later from Settings.
-  const handleOnboardingComplete = ({ income: inc, budget: bud, goal } = {}) => {
-    setTransactions([]);
+  // Onboarding finished (after phone verification + bank discovery).
+  //  • Linked at least one bank → pull in their data so the app is populated.
+  //  • No bank linked (unchecked all) → manual mode, everything stays at 0.
+  const handleOnboardingComplete = ({ income: inc, budget: bud, goal, banks = [] } = {}) => {
+    const hasBanks = banks.length > 0;
+    setBanks(banks);
+    setManualMode(!hasBanks);
+    setTransactions(hasBanks ? generateDemoTransactions(6) : []);
     setAtmRemaining(0);
-    setBanks([]);
-    setManualMode(true);
     setIncome(inc ?? 0); // 0 = not set yet (goal path) → dashboard prompts for it
     setBudget(bud ?? 0);
     setGoals(goal ? [{ id: crypto.randomUUID(), ...goal, isNew: true, detected: false }] : []);
@@ -417,7 +420,10 @@ function App() {
             activeFilter={activeFilter}
             onAddExpense={() => setShowAddExpense(true)}
             onAtmSplit={() => setShowAtmSplit(true)}
-            onViewAll={() => setActiveView('spend')}
+            onViewAll={() => {
+              setSpendSearch('');
+              setActiveView('spend');
+            }}
             onSetupBudget={() => setActiveView('settings')}
           />
         );
@@ -430,6 +436,8 @@ function App() {
             onAddExpense={() => setShowAddExpense(true)}
             onUpdateTransaction={updateTransaction}
             onDeleteTransaction={deleteTransaction}
+            searchQuery={spendSearch}
+            onClearSearch={() => setSpendSearch('')}
           />
         );
       case 'goals':
@@ -520,7 +528,10 @@ function App() {
       {onboardingDone && (
         <Sidebar
           activeView={activeView}
-          setActiveView={setActiveView}
+          setActiveView={(v) => {
+            setSpendSearch('');
+            setActiveView(v);
+          }}
           onAddExpense={() => setShowAddExpense(true)}
           onSearch={() => setShowSearch(true)}
         />
@@ -563,6 +574,11 @@ function App() {
           transactions={transactions}
           onClose={() => setShowSearch(false)}
           onNavigate={setActiveView}
+          onOpenMerchant={(merchant) => {
+            setSpendSearch(merchant);
+            setActiveView('spend');
+          }}
+          onAddExpense={() => setShowAddExpense(true)}
         />
       )}
 

@@ -189,6 +189,11 @@ export default function Dashboard({
 
   const topCat = topCategories[0];
 
+  // Goals summary (shown to everyone — friendly empty state when none).
+  const totalSaved = goals.reduce((a, g) => a + (g.saved || 0), 0);
+  const totalTarget = goals.reduce((a, g) => a + (g.target || 0), 0);
+  const goalProgress = totalTarget > 0 ? Math.round((totalSaved / totalTarget) * 100) : 0;
+
   // Donut data: top 4 categories + Others
   const catTotals = getCategoryTotals(transactions);
   const sorted = Object.entries(catTotals).sort((a, b) => b[1] - a[1]);
@@ -288,9 +293,10 @@ export default function Dashboard({
           sub={topCat ? `${fmt(topCat.amount)} this month` : ''}
         />
         <StatCard
-          label="No. of Transaction"
-          value={transactions.length}
-          sub="this month"
+          label="Goals"
+          value={goals.length > 0 ? goals.length : '—'}
+          sub={goals.length > 0 ? `${goalProgress}% funded` : 'No goals yet'}
+          subColor={goals.length > 0 ? 'text-[#15803D]' : 'text-[#9ca3af]'}
         />
       </div>
 
