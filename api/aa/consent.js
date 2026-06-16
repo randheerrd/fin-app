@@ -13,27 +13,16 @@ export default async function handler(req, res) {
   const now = new Date();
   const sixMonthsAgo = new Date(now.getTime() - 1000 * 60 * 60 * 24 * 180);
 
-  // NOTE: this body follows Setu's AA consent schema. Confirm field values against
-  // your Setu product docs (consentTypes / fiTypes / Purpose code may differ).
+  // Setu AA v2 consent schema (verified live against the sandbox).
   const body = {
     consentDuration: { unit: 'MONTH', value: '12' },
     consentMode: 'STORE',
     consentTypes: ['TRANSACTIONS', 'PROFILE', 'SUMMARY'],
     fetchType: 'PERIODIC',
-    Frequency: { unit: 'DAY', value: 1 },
-    DataFilter: [],
     fiTypes: ['DEPOSIT'],
-    DataLife: { unit: 'MONTH', value: 12 },
-    DataConsumer: { id: process.env.SETU_PRODUCT_INSTANCE_ID },
-    // Virtual User Address — in sandbox use a test AA handle (e.g. <mobile>@onemoney)
-    Customer: { id: `${mobile}@onemoney` },
-    Purpose: {
-      code: '101',
-      text: 'Personal finance management',
-      refUri: 'https://api.rebit.org.in/aa/purpose/101.xml',
-      Category: { type: 'Personal Finance' },
-    },
-    FIDataRange: { from: sixMonthsAgo.toISOString(), to: now.toISOString() },
+    dataRange: { from: sixMonthsAgo.toISOString(), to: now.toISOString() },
+    // Virtual User Address. Sandbox test handle: <mobile>@onemoney
+    vua: `${mobile}@onemoney`,
     ...(redirectUrl ? { redirectUrl } : {}),
   };
 

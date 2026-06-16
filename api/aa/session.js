@@ -14,7 +14,7 @@ export default async function handler(req, res) {
 
   const body = {
     consentId,
-    DataRange: { from: from || sixMonthsAgo.toISOString(), to: to || now.toISOString() },
+    dataRange: { from: from || sixMonthsAgo.toISOString(), to: to || now.toISOString() },
     format: 'json',
   };
 
