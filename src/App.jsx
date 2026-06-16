@@ -427,9 +427,9 @@ function App() {
             atmRemaining={atmRemaining}
             manualMode={manualMode}
             activeFilter={activeFilter}
-            setActiveFilter={setActiveFilter}
             onAddExpense={() => setShowAddExpense(true)}
             onAtmSplit={() => setShowAtmSplit(true)}
+            onViewAll={() => setActiveView('spend')}
           />
         );
       case 'spend':

@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { ChevronRight, ChevronDown, Plus } from 'lucide-react';
 import {
   getTotalSpent,
@@ -19,8 +20,8 @@ function formatTxnDate(dateStr) {
   return `${d.getDate()} ${d.toLocaleString('en-IN', { month: 'short' })}`;
 }
 
-/* ---------- Donut ---------- */
-function Donut({ segments, total }) {
+/* ---------- Donut (interactive) ---------- */
+function Donut({ segments, total, active, onHover, onSelect }) {
   const r = 70;
   const stroke = 26;
   const C = 2 * Math.PI * r;
@@ -29,9 +30,10 @@ function Donut({ segments, total }) {
     const start = segments.slice(0, i).reduce((a, x) => a + (x.value / total) * C, 0);
     return { ...s, len, start };
   });
+  const act = active != null ? segments[active] : null;
   return (
     <div className="relative" style={{ width: 180, height: 180 }}>
-      <svg width="180" height="180" viewBox="0 0 180 180" className="-rotate-90">
+      <svg width="180" height="180" viewBox="0 0 180 180" className="-rotate-90" onMouseLeave={() => onHover?.(null)}>
         {arcs.map((s, i) => (
           <circle
             key={i}
@@ -40,14 +42,28 @@ function Donut({ segments, total }) {
             r={r}
             fill="none"
             stroke={s.color}
-            strokeWidth={stroke}
+            strokeWidth={active === i ? stroke + 6 : stroke}
             strokeDasharray={`${s.len} ${C - s.len}`}
             strokeDashoffset={-s.start}
+            opacity={active == null || active === i ? 1 : 0.35}
+            onMouseEnter={() => onHover?.(i)}
+            onClick={() => onSelect?.(s)}
+            style={{ cursor: 'pointer', transition: 'opacity .15s, stroke-width .15s' }}
           />
         ))}
       </svg>
-      <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <span className="text-xl font-bold text-[#111827]">{fmt(total)}</span>
+      <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center px-6">
+        {act ? (
+          <>
+            <span className="text-xs text-[#6b7280] truncate max-w-[120px]">{act.label}</span>
+            <span className="text-lg font-bold text-[#111827]">{fmt(act.value)}</span>
+          </>
+        ) : (
+          <>
+            <span className="text-xl font-bold text-[#111827]">{fmt(total)}</span>
+            <span className="text-xs text-[#9ca3af]">spent</span>
+          </>
+        )}
       </div>
     </div>
   );
@@ -55,6 +71,7 @@ function Donut({ segments, total }) {
 
 /* ---------- Weekly bar chart ---------- */
 function WeeklyChart({ transactions }) {
+  const [hover, setHover] = useState(null);
   const labels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
   const now = new Date();
   const totals = labels.map((_, i) => {
@@ -90,13 +107,20 @@ function WeeklyChart({ transactions }) {
           const isWeekend = i >= 5;
           const h = Math.max((totals[i] / max) * 130, totals[i] > 0 ? 8 : 4);
           return (
-            <div key={day} className="flex-1 flex flex-col items-center gap-2">
-              <span className="text-[11px] text-[#9ca3af]">{totals[i] > 0 ? fmt(totals[i]) : ''}</span>
+            <div
+              key={day}
+              className="flex-1 flex flex-col items-center gap-2 cursor-default"
+              onMouseEnter={() => setHover(i)}
+              onMouseLeave={() => setHover(null)}
+            >
+              <span className={`text-[11px] font-medium ${hover === i ? 'text-[#111827]' : 'text-[#9ca3af]'}`}>
+                {totals[i] > 0 ? fmt(totals[i]) : ''}
+              </span>
               <div
-                className={`w-full rounded-md ${isWeekend ? 'bg-[#F08A5D]' : 'bg-[#0E3F2E]'}`}
-                style={{ height: `${h}px` }}
+                className={`w-full rounded-md transition-opacity ${isWeekend ? 'bg-[#F08A5D]' : 'bg-[#0E3F2E]'}`}
+                style={{ height: `${h}px`, opacity: hover == null || hover === i ? 1 : 0.4 }}
               />
-              <span className="text-xs text-[#9ca3af]">{day}</span>
+              <span className={`text-xs ${hover === i ? 'text-[#111827] font-medium' : 'text-[#9ca3af]'}`}>{day}</span>
             </div>
           );
         })}
@@ -134,10 +158,11 @@ export default function Dashboard({
   atmRemaining,
   manualMode,
   activeFilter,
-  setActiveFilter,
   onAddExpense,
   onAtmSplit,
+  onViewAll,
 }) {
+  const [activeSeg, setActiveSeg] = useState(null);
   const totalSpent = getTotalSpent(transactions, atmRemaining);
   const topCategories = getTopCategories(transactions, 3);
   const dayOfMonth = getDayOfMonth();
@@ -331,13 +356,23 @@ export default function Dashboard({
         <div className="border border-[#ECEEF0] rounded-2xl shadow-[0_1px_2px_rgba(16,24,40,0.04)] p-6">
           <p className="text-xs uppercase tracking-wide text-[#9ca3af] font-medium mb-4">Where It Went</p>
           <div className="flex items-center gap-6">
-            <Donut segments={segments} total={donutTotal} />
-            <div className="flex-1 space-y-1">
-              {segments.map((s) => (
+            <Donut
+              segments={segments}
+              total={donutTotal}
+              active={activeSeg}
+              onHover={setActiveSeg}
+              onSelect={() => onViewAll?.()}
+            />
+            <div className="flex-1 space-y-0.5">
+              {segments.map((s, i) => (
                 <button
                   key={s.id}
-                  onClick={() => s.id !== 'others' && setActiveFilter(activeFilter === s.id ? null : s.id)}
-                  className="w-full flex items-center justify-between py-2 group"
+                  onMouseEnter={() => setActiveSeg(i)}
+                  onMouseLeave={() => setActiveSeg(null)}
+                  onClick={() => onViewAll?.()}
+                  className={`w-full flex items-center justify-between py-2 px-2 rounded-lg transition-colors ${
+                    activeSeg === i ? 'bg-[#f9fafb]' : ''
+                  }`}
                 >
                   <span className="flex items-center gap-2.5">
                     <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: s.color }} />
@@ -363,7 +398,9 @@ export default function Dashboard({
       <div className="border border-[#ECEEF0] rounded-2xl shadow-[0_1px_2px_rgba(16,24,40,0.04)] p-6">
         <div className="flex items-center justify-between mb-4">
           <p className="text-xs uppercase tracking-wide text-[#9ca3af] font-medium">Recent Transactions</p>
-          <button className="text-sm font-medium text-[#0E3F2E] hover:underline">See All</button>
+          <button onClick={() => onViewAll?.()} className="text-sm font-medium text-[#0E3F2E] hover:underline">
+            See All
+          </button>
         </div>
         <div className="grid grid-cols-[1fr_auto_auto] gap-x-8 text-[11px] uppercase tracking-wide text-[#9ca3af] font-medium px-2 pb-2 border-b border-[#f3f4f6]">
           <span>Transaction</span>
