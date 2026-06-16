@@ -16,6 +16,8 @@ import SearchModal from './components/SearchModal';
 import Toast from './components/Toast';
 import { enrichTransactionsWithIds, BANK_TRANSACTIONS, INITIAL_RECURRING } from './data/seed';
 import { getToday } from './lib/utils';
+import { firebaseEnabled } from './lib/firebase';
+import { onUser, loadUserData, saveUserData } from './lib/userData';
 
 function App() {
   // Core state
@@ -30,6 +32,8 @@ function App() {
   const [onboardingDone, setOnboardingDone] = useState(false);
   const [landingDone, setLandingDone] = useState(false);
   const [authScreen, setAuthScreen] = useState('landing'); // 'landing' | 'login'
+  const [firebaseUser, setFirebaseUser] = useState(null);
+  const [hydrated, setHydrated] = useState(false); // user's saved data loaded
 
   // UI state
   const [activeView, setActiveView] = useState('dashboard');
@@ -43,6 +47,57 @@ function App() {
   const [showSearch, setShowSearch] = useState(false);
   const [toast, setToast] = useState(null);
   const mainContentRef = useRef(null);
+
+  // Track the signed-in Firebase user (no-op in demo mode).
+  useEffect(() => onUser(setFirebaseUser), []);
+
+  // When a real user signs in, hydrate their saved data from Firestore.
+  useEffect(() => {
+    if (!firebaseEnabled || !firebaseUser) return;
+    let cancelled = false;
+    loadUserData(firebaseUser.uid).then((data) => {
+      if (cancelled) return;
+      if (data && (data.transactions?.length || data.onboardingDone)) {
+        setIncome(data.income ?? 75000);
+        setBudget(data.budget ?? 45000);
+        setTransactions(data.transactions ?? []);
+        setGoals(data.goals ?? []);
+        setBanks(data.banks ?? []);
+        setRecurring(data.recurring ?? []);
+        setAtmRemaining(data.atmRemaining ?? 0);
+        setManualMode(!!data.manualMode);
+        setLandingDone(true);
+        setOnboardingDone(true);
+        setActiveView('dashboard');
+      } else {
+        // New user — run onboarding; data will be saved under their uid.
+        setLandingDone(true);
+      }
+      setHydrated(true);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [firebaseUser]);
+
+  // Persist app data for the signed-in user (debounced) once onboarded.
+  useEffect(() => {
+    if (!firebaseEnabled || !firebaseUser || !onboardingDone || !hydrated) return;
+    const t = setTimeout(() => {
+      saveUserData(firebaseUser.uid, {
+        income,
+        budget,
+        transactions,
+        goals,
+        banks,
+        recurring,
+        atmRemaining,
+        manualMode,
+        onboardingDone: true,
+      });
+    }, 800);
+    return () => clearTimeout(t);
+  }, [firebaseUser, hydrated, onboardingDone, income, budget, transactions, goals, banks, recurring, atmRemaining, manualMode]);
 
   // Reset scroll when view changes or onboarding completes
   useEffect(() => {
@@ -96,9 +151,22 @@ function App() {
     { name: 'ICICI Bank', type: 'Saving account', mask: '··2291', synced: 'just now' },
   ];
 
-  const handleSignup = () => setLandingDone(true);
+  // With real Firebase, phone OTP is the single entry point — first-time users
+  // are routed to it too, then the hydrate effect decides onboarding vs dashboard.
+  const handleSignup = () => {
+    if (firebaseEnabled) {
+      setAuthScreen('login');
+      return;
+    }
+    setLandingDone(true);
+  };
 
   const handleLogin = () => {
+    if (firebaseEnabled) {
+      // Auth state change triggers the hydrate effect, which sets the rest.
+      setLandingDone(true);
+      return;
+    }
     handleBankConnected(DEFAULT_BANKS);
     setLandingDone(true);
     setActiveView('dashboard');

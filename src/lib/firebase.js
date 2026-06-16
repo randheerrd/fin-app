@@ -7,6 +7,7 @@ import {
   RecaptchaVerifier,
   signInWithPhoneNumber,
 } from 'firebase/auth';
+import { getFirestore } from 'firebase/firestore';
 
 const cfg = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -18,13 +19,15 @@ const cfg = {
 export const firebaseEnabled = Boolean(cfg.apiKey && cfg.authDomain && cfg.projectId);
 
 let auth = null;
+let db = null;
 if (firebaseEnabled) {
   const app = initializeApp(cfg);
   auth = getAuth(app);
   auth.useDeviceLanguage();
+  db = getFirestore(app);
 }
 
-export { auth };
+export { auth, db };
 
 // Lazily create one invisible reCAPTCHA verifier bound to a container element id.
 let recaptcha = null;
