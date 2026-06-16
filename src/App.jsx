@@ -19,7 +19,7 @@ import { getToday } from './lib/utils';
 import { firebaseEnabled, logout } from './lib/firebase';
 import { onUser, loadUserData, saveUserData } from './lib/userData';
 import { aaEnabled, waitForConsent, createSession, waitForData, mapTransactions } from './lib/setu';
-import { DEMO_PHONE, generateDemoTransactions, DEMO_BANKS, DEMO_GOALS } from './data/demoSeed';
+import { DEMO_PHONE, FRESH_DEMO_PHONE, generateDemoTransactions, DEMO_BANKS, DEMO_GOALS } from './data/demoSeed';
 
 function App() {
   // Core state
@@ -100,6 +100,22 @@ function App() {
     let cancelled = false;
     loadUserData(firebaseUser.uid).then((data) => {
       if (cancelled) return;
+      const phone = firebaseUser.phoneNumber || '';
+      if (phone.includes(FRESH_DEMO_PHONE)) {
+        // Test account that always starts a clean new-user onboarding flow.
+        setTransactions([]);
+        setGoals([]);
+        setBanks([]);
+        setRecurring([]);
+        setAtmRemaining(0);
+        setManualMode(false);
+        setIncome(75000);
+        setBudget(45000);
+        setLandingDone(true);
+        setOnboardingDone(false);
+        setHydrated(true);
+        return;
+      }
       if (data && (data.transactions?.length || data.onboardingDone)) {
         setIncome(data.income ?? 75000);
         setBudget(data.budget ?? 45000);
@@ -136,6 +152,8 @@ function App() {
   // Persist app data for the signed-in user (debounced) once onboarded.
   useEffect(() => {
     if (!firebaseEnabled || !firebaseUser || !onboardingDone || !hydrated) return;
+    if ((firebaseUser.phoneNumber || '').includes(FRESH_DEMO_PHONE)) return; // stays stateless
+
     const t = setTimeout(() => {
       saveUserData(firebaseUser.uid, {
         income,

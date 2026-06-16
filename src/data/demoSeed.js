@@ -1,7 +1,8 @@
 // Rich demo dataset for the test account (+91 9876543210 / OTP 111111).
 // Generates ~6 months of realistic transactions so the dashboard/insights look full.
 
-export const DEMO_PHONE = '9876543210';
+export const DEMO_PHONE = '9876543210'; // preloaded with 6 months of data
+export const FRESH_DEMO_PHONE = '0123456789'; // always starts a fresh new-user flow
 
 const MERCHANTS = [
   { name: 'Swiggy', category: 'food', min: 180, max: 720 },
