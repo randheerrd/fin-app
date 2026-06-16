@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Shield, LogOut } from 'lucide-react';
+import { Shield, LogOut, Plus } from 'lucide-react';
 import BrandLogo from '../BrandLogo';
 import { bankBrand } from '../../lib/logos';
 import AddBankModal from '../modals/AddBankModal';
@@ -56,19 +56,18 @@ export default function Settings({
     city: '',
   });
   const [editingProfile, setEditingProfile] = useState(false);
-  const [draft, setDraft] = useState(profile);
+  const [draft, setDraft] = useState({ ...profile, income: String(income), budget: String(budget) });
 
   const startEdit = () => {
-    setDraft(profile);
+    setDraft({ ...profile, income: String(income), budget: String(budget) });
     setEditingProfile(true);
   };
   const saveProfile = () => {
-    setProfile(draft);
+    setProfile({ fullName: draft.fullName, email: draft.email, mobile: draft.mobile, city: draft.city });
+    setIncome(parseFloat(draft.income) || income);
+    setBudget(parseFloat(draft.budget) || budget);
     setEditingProfile(false);
   };
-
-  const [incomeInput, setIncomeInput] = useState(income.toString());
-  const [budgetInput, setBudgetInput] = useState(budget.toString());
 
   const [notifications, setNotifications] = useState({
     weekly: true,
@@ -78,11 +77,6 @@ export default function Settings({
   const [pausedBanks, setPausedBanks] = useState({});
 
   const [removeConfirm, setRemoveConfirm] = useState(null);
-
-  const handleSaveNumbers = () => {
-    setIncome(parseFloat(incomeInput) || income);
-    setBudget(parseFloat(budgetInput) || budget);
-  };
 
   const handleRemoveBank = (idx) => {
     setBanks((prev) => prev.filter((_, i) => i !== idx));
@@ -145,6 +139,8 @@ export default function Settings({
                     { label: 'Email Address', value: profile.email || '—' },
                     { label: 'Mobile No', value: profile.mobile || '—' },
                     { label: 'City', value: profile.city || '—' },
+                    { label: 'Monthly Income', value: `₹${income.toLocaleString('en-IN')}` },
+                    { label: 'Monthly Budget', value: `₹${budget.toLocaleString('en-IN')}` },
                   ].map((f) => (
                     <div key={f.label}>
                       <p className="text-xs text-[#9ca3af] mb-1">{f.label}</p>
@@ -193,6 +189,30 @@ export default function Settings({
                       className={inputClass}
                       placeholder="Enter City"
                     />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-[#374151] mb-1.5">Monthly Income</label>
+                    <div className="flex items-center border border-[#e5e7eb] rounded-lg overflow-hidden focus-within:border-[#0E3F2E]">
+                      <span className="pl-3.5 text-[#9ca3af] text-sm">₹</span>
+                      <input
+                        type="number"
+                        value={draft.income}
+                        onChange={(e) => setDraft((d) => ({ ...d, income: e.target.value }))}
+                        className="flex-1 px-2 py-2.5 text-sm text-[#111827] outline-none bg-white"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-[#374151] mb-1.5">Monthly Budget</label>
+                    <div className="flex items-center border border-[#e5e7eb] rounded-lg overflow-hidden focus-within:border-[#0E3F2E]">
+                      <span className="pl-3.5 text-[#9ca3af] text-sm">₹</span>
+                      <input
+                        type="number"
+                        value={draft.budget}
+                        onChange={(e) => setDraft((d) => ({ ...d, budget: e.target.value }))}
+                        className="flex-1 px-2 py-2.5 text-sm text-[#111827] outline-none bg-white"
+                      />
+                    </div>
                   </div>
                 </div>
                 <div className="flex gap-3 mt-5">
@@ -257,8 +277,9 @@ export default function Settings({
                   <p className="text-[#9ca3af] text-sm mb-4">No bank connected</p>
                   <button
                     onClick={() => setShowAddBank(true)}
-                    className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#0E3F2E] text-white text-sm font-medium rounded-lg hover:bg-[#0a3122] transition-colors"
+                    className="inline-flex items-center gap-1.5 text-sm font-medium text-[#374151] hover:text-[#111827] transition-colors"
                   >
+                    <Plus size={15} className="text-[#9ca3af]" />
                     Link a bank
                   </button>
                 </div>
@@ -300,51 +321,13 @@ export default function Settings({
                   ))}
                   <button
                     onClick={() => setShowAddBank(true)}
-                    className="mt-1 px-4 py-2.5 bg-[#0E3F2E] text-white text-sm font-medium rounded-lg hover:bg-[#0a3122] transition-colors"
+                    className="mt-1 inline-flex items-center gap-1.5 text-sm font-medium text-[#374151] hover:text-[#111827] transition-colors"
                   >
-                    + Link another bank
+                    <Plus size={15} className="text-[#9ca3af]" />
+                    Link another bank
                   </button>
                 </div>
               )}
-            </div>
-          </div>
-
-          {/* Monthly numbers */}
-          <div className={cardClass}>
-            <SectionLabel>Monthly Numbers</SectionLabel>
-            <div className="px-6 pb-5">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                <div>
-                  <label className="block text-sm font-medium text-[#374151] mb-1.5">Monthly Income</label>
-                  <div className="flex items-center border border-[#e5e7eb] rounded-lg overflow-hidden focus-within:border-[#0E3F2E]">
-                    <span className="pl-3.5 text-[#9ca3af] text-sm">₹</span>
-                    <input
-                      type="number"
-                      value={incomeInput}
-                      onChange={(e) => setIncomeInput(e.target.value)}
-                      className="flex-1 px-2 py-2.5 text-sm text-[#111827] outline-none bg-white"
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-[#374151] mb-1.5">Monthly Budget</label>
-                  <div className="flex items-center border border-[#e5e7eb] rounded-lg overflow-hidden focus-within:border-[#0E3F2E]">
-                    <span className="pl-3.5 text-[#9ca3af] text-sm">₹</span>
-                    <input
-                      type="number"
-                      value={budgetInput}
-                      onChange={(e) => setBudgetInput(e.target.value)}
-                      className="flex-1 px-2 py-2.5 text-sm text-[#111827] outline-none bg-white"
-                    />
-                  </div>
-                </div>
-              </div>
-              <button
-                onClick={handleSaveNumbers}
-                className="mt-5 px-5 py-2.5 bg-[#0E3F2E] text-white text-sm font-medium rounded-lg hover:bg-[#0a3122] transition-colors"
-              >
-                Save &amp; recalculate
-              </button>
             </div>
           </div>
 
@@ -399,13 +382,15 @@ export default function Settings({
 
           {/* Logout */}
           {onLogout && (
-            <button
-              onClick={onLogout}
-              className="w-full flex items-center justify-center gap-2 py-3 border border-[#e5e7eb] text-[#374151] text-sm font-medium rounded-lg hover:bg-[#f9fafb] transition-colors"
-            >
-              <LogOut size={16} />
-              Log out
-            </button>
+            <div className="pt-1">
+              <button
+                onClick={onLogout}
+                className="inline-flex items-center gap-2 px-5 py-2.5 border border-[#fde0e0] text-red-500 text-sm font-medium rounded-lg hover:bg-[#fef2f2] transition-colors"
+              >
+                <LogOut size={15} />
+                Logout
+              </button>
+            </div>
           )}
         </div>
       </div>
