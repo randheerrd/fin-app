@@ -18,6 +18,7 @@ import { enrichTransactionsWithIds, BANK_TRANSACTIONS, INITIAL_RECURRING } from 
 import { getToday } from './lib/utils';
 import { firebaseEnabled } from './lib/firebase';
 import { onUser, loadUserData, saveUserData } from './lib/userData';
+import { aaEnabled, waitForConsent, createSession, waitForData, mapTransactions } from './lib/setu';
 
 function App() {
   // Core state
@@ -34,6 +35,10 @@ function App() {
   const [authScreen, setAuthScreen] = useState('landing'); // 'landing' | 'login'
   const [firebaseUser, setFirebaseUser] = useState(null);
   const [hydrated, setHydrated] = useState(false); // user's saved data loaded
+  // 'importing' when we return from the Setu approval page with a pending consent.
+  const [aaImport, setAaImport] = useState(() =>
+    aaEnabled && localStorage.getItem('aa_pending') ? 'importing' : 'idle'
+  );
 
   // UI state
   const [activeView, setActiveView] = useState('dashboard');
@@ -47,6 +52,43 @@ function App() {
   const [showSearch, setShowSearch] = useState(false);
   const [toast, setToast] = useState(null);
   const mainContentRef = useRef(null);
+
+  // Resume a Setu AA bank-connect after the user returns from the approval page.
+  useEffect(() => {
+    if (aaImport !== 'importing') return;
+    (async () => {
+      let pending;
+      try {
+        pending = JSON.parse(localStorage.getItem('aa_pending') || 'null');
+      } catch {
+        pending = null;
+      }
+      if (!pending) {
+        localStorage.removeItem('aa_pending');
+        setAaImport('idle');
+        return;
+      }
+      try {
+        const consent = await waitForConsent(pending.consentId);
+        if (consent.status !== 'ACTIVE') throw new Error('Consent not approved');
+        const session = await createSession(pending.consentId);
+        const data = await waitForData(session.id);
+        setTransactions(mapTransactions(data));
+        if (pending.income) setIncome(pending.income);
+        if (pending.budget) setBudget(pending.budget);
+        setBanks([{ name: 'Linked Bank', type: 'Savings account', mask: '····', synced: 'just now' }]);
+        setLandingDone(true);
+        setOnboardingDone(true);
+        setActiveView('dashboard');
+        setAaImport('idle');
+      } catch (e) {
+        console.error('AA import failed:', e);
+        setAaImport('error');
+      } finally {
+        localStorage.removeItem('aa_pending');
+      }
+    })();
+  }, [aaImport]);
 
   // Track the signed-in Firebase user (no-op in demo mode).
   useEffect(() => onUser(setFirebaseUser), []);
@@ -423,6 +465,32 @@ function App() {
       showToast('Demo restarted', 'success');
     }
   };
+
+  // Setu AA import screen (after returning from the bank approval page).
+  if (aaImport !== 'idle') {
+    return (
+      <div className="h-screen bg-white flex flex-col items-center justify-center px-6 text-center">
+        {aaImport === 'importing' ? (
+          <>
+            <div className="w-10 h-10 border-2 border-[#e5e7eb] border-t-[#0E3F2E] rounded-full animate-spin mb-6" />
+            <p className="font-display text-2xl text-[#111827] mb-1">Importing your transactions…</p>
+            <p className="text-sm text-[#6b7280]">Fetching securely from your bank via the Account Aggregator.</p>
+          </>
+        ) : (
+          <>
+            <p className="font-display text-2xl text-[#111827] mb-2">Couldn’t import your data</p>
+            <p className="text-sm text-[#6b7280] mb-6">The bank connection wasn’t approved or timed out.</p>
+            <button
+              onClick={() => setAaImport('idle')}
+              className="px-5 py-2.5 bg-[#0E3F2E] text-white text-sm font-medium rounded-lg hover:bg-[#0a3122] transition-colors"
+            >
+              Back to start
+            </button>
+          </>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className={`flex h-screen overflow-hidden ${onboardingDone ? 'bg-[#0E3F2E]' : 'bg-white'}`}>

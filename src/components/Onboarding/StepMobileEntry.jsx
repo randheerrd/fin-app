@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { ArrowLeft, ArrowRight, Lock } from 'lucide-react';
 import accountAggregatorAPI from '../../lib/api';
 
-export default function StepMobileEntry({ onSubmit, onBack }) {
+export default function StepMobileEntry({ onSubmit, onAAConnect, onBack }) {
   const [mobile, setMobile] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -12,6 +12,19 @@ export default function StepMobileEntry({ onSubmit, onBack }) {
 
     setLoading(true);
     setError('');
+
+    // Real Setu AA — redirect to the hosted consent approval page.
+    if (onAAConnect) {
+      try {
+        await onAAConnect(mobile); // navigates away on success
+        return;
+      } catch (err) {
+        console.error('AA connect error:', err);
+        setError('Could not start bank connection. Please try again.');
+        setLoading(false);
+        return;
+      }
+    }
 
     try {
       const response = await accountAggregatorAPI.initiateConsent(mobile);

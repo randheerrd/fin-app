@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import FinAppLogo from '../FinAppLogo';
+import { aaEnabled, createConsent } from '../../lib/setu';
 import StepPathChoice from './StepPathChoice';
 import StepTrackSetup from './StepTrackSetup';
 import StepGoalSetup from './StepGoalSetup';
@@ -73,6 +74,19 @@ export default function OnboardingShell({
     setMobile(phoneNumber);
     setConsentId(cid);
     setStep('otp');
+  };
+
+  // Real Setu AA: create a consent and redirect to the hosted approval page.
+  // We stash what we need so the app can resume the import when the user returns.
+  const handleAAConnect = async (phoneNumber) => {
+    const redirectUrl = window.location.origin + '/';
+    const res = await createConsent(phoneNumber, redirectUrl);
+    if (!res?.id || !res?.url) throw new Error('Could not start bank connection.');
+    localStorage.setItem(
+      'aa_pending',
+      JSON.stringify({ consentId: res.id, mobile: phoneNumber, income, budget })
+    );
+    window.location.href = res.url;
   };
 
   const handleMobileBack = () => {
@@ -199,7 +213,11 @@ export default function OnboardingShell({
             {baseStep === 'track-setup' && <StepTrackSetup onAction={handleTrackSetup} />}
             {baseStep === 'goal-setup' && <StepGoalSetup onAction={handleGoalSetup} />}
             {baseStep === 'mobile' && (
-              <StepMobileEntry onSubmit={handleMobileSubmit} onBack={linkingMode ? null : handleMobileBack} />
+              <StepMobileEntry
+                onSubmit={handleMobileSubmit}
+                onAAConnect={aaEnabled ? handleAAConnect : null}
+                onBack={linkingMode ? null : handleMobileBack}
+              />
             )}
             {baseStep === 'otp' && (
               <StepOTP
