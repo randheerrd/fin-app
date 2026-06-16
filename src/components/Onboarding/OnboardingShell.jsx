@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { Play } from 'lucide-react';
 import FinAppLogo from '../FinAppLogo';
 import StepPathChoice from './StepPathChoice';
 import StepTrackSetup from './StepTrackSetup';
@@ -126,6 +125,11 @@ export default function OnboardingShell({
     });
   };
 
+  const handleAddAnother = (bankData) => {
+    setFoundAccounts((prev) => [...prev, { bank: bankData.name, type: bankData.type, mask: bankData.mask }]);
+    setSelectedAccounts((prev) => [...prev, true]);
+  };
+
   const handleAccountContinue = () => {
     setStep('consent');
   };
@@ -174,7 +178,8 @@ export default function OnboardingShell({
       </header>
 
       {/* White rounded panel floating on the green background */}
-      <div className="flex-1 bg-white rounded-3xl overflow-auto relative">
+      <div className="flex-1 bg-white rounded-3xl overflow-hidden relative">
+        <div className="h-full overflow-y-auto">
         <div className="w-full min-h-full flex flex-col items-center px-4 pt-24 pb-16">
           {showDots && (
             <div className="flex justify-center gap-2.5 mb-12">
@@ -218,19 +223,16 @@ export default function OnboardingShell({
                 onToggle={handleAccountSelect}
                 onContinue={handleAccountContinue}
                 onBack={handleAccountBack}
+                onAddAnother={handleAddAnother}
               />
             )}
           </div>
+        </div>
         </div>
       </div>
 
       {/* Consent modal */}
       {step === 'consent' && <StepConsent onAccept={handleConsentAccept} onBack={handleConsentBack} />}
-
-      {/* Demo play FAB */}
-      <button className="absolute bottom-6 right-6 w-11 h-11 rounded-full bg-white border border-[#d1d5db] shadow-sm flex items-center justify-center text-[#0E3F2E] hover:bg-[#f9fafb] transition-colors">
-        <Play size={16} className="ml-0.5" fill="currentColor" />
-      </button>
     </div>
   );
 }

@@ -5,8 +5,18 @@ import GoalCard from './GoalCard';
 
 const fmt = (n) => `₹${Math.round(n).toLocaleString('en-IN')}`;
 
-export default function Goals({ goals, transactions, onAddGoal, sipDismissed, onDismissSip, onAcceptSip }) {
+export default function Goals({
+  goals,
+  transactions,
+  onAddGoal,
+  onUpdateGoal,
+  onDeleteGoal,
+  sipDismissed,
+  onDismissSip,
+  onAcceptSip,
+}) {
   const [showAddModal, setShowAddModal] = useState(false);
+  const [editingGoal, setEditingGoal] = useState(null);
 
   const onTrackCount = goals.filter((g) => {
     if (g.isNew) return true;
@@ -95,12 +105,21 @@ export default function Goals({ goals, transactions, onAddGoal, sipDismissed, on
 
       <div className="space-y-5">
         {goals.map((goal) => (
-          <GoalCard key={goal.id} goal={goal} onEdit={() => setShowAddModal(true)} />
+          <GoalCard key={goal.id} goal={goal} onEdit={() => setEditingGoal(goal)} />
         ))}
       </div>
 
       {showAddModal && (
         <AddGoalModal onClose={() => setShowAddModal(false)} onSave={(d) => { onAddGoal(d); setShowAddModal(false); }} />
+      )}
+
+      {editingGoal && (
+        <AddGoalModal
+          initial={editingGoal}
+          onClose={() => setEditingGoal(null)}
+          onSave={(d) => { onUpdateGoal(d); setEditingGoal(null); }}
+          onDelete={(id) => { onDeleteGoal(id); setEditingGoal(null); }}
+        />
       )}
     </div>
   );

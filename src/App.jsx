@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import './index.css';
 import Landing from './components/Landing';
+import LoginPage from './components/LoginPage';
 import Sidebar from './components/Sidebar';
 import OnboardingShell from './components/Onboarding/OnboardingShell';
 import Dashboard from './components/Dashboard/Dashboard';
@@ -11,6 +12,7 @@ import Insights from './components/Insights/Insights';
 import Settings from './components/Settings/Settings';
 import AddExpenseModal from './components/modals/AddExpenseModal';
 import AtmSplitModal from './components/modals/AtmSplitModal';
+import SearchModal from './components/SearchModal';
 import Toast from './components/Toast';
 import { enrichTransactionsWithIds, BANK_TRANSACTIONS, INITIAL_RECURRING } from './data/seed';
 import { getToday } from './lib/utils';
@@ -27,6 +29,7 @@ function App() {
   const [manualMode, setManualMode] = useState(false);
   const [onboardingDone, setOnboardingDone] = useState(false);
   const [landingDone, setLandingDone] = useState(false);
+  const [authScreen, setAuthScreen] = useState('landing'); // 'landing' | 'login'
 
   // UI state
   const [activeView, setActiveView] = useState('dashboard');
@@ -37,6 +40,7 @@ function App() {
   // Modal state
   const [showAddExpense, setShowAddExpense] = useState(false);
   const [showAtmSplit, setShowAtmSplit] = useState(false);
+  const [showSearch, setShowSearch] = useState(false);
   const [toast, setToast] = useState(null);
   const mainContentRef = useRef(null);
 
@@ -62,6 +66,7 @@ function App() {
       } else if (e.key === 'Escape') {
         setShowAddExpense(false);
         setShowAtmSplit(false);
+        setShowSearch(false);
       }
     };
 
@@ -141,6 +146,20 @@ function App() {
     showToast(`${new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(data.amount)} added to ${data.category}`, 'success');
   };
 
+  const updateTransaction = (updated) => {
+    setTransactions((prev) =>
+      prev
+        .map((t) => (t.id === updated.id ? { ...t, ...updated } : t))
+        .sort((a, b) => new Date(b.date) - new Date(a.date))
+    );
+    showToast('Transaction updated', 'success');
+  };
+
+  const deleteTransaction = (id) => {
+    setTransactions((prev) => prev.filter((t) => t.id !== id));
+    showToast('Transaction deleted', 'success');
+  };
+
   const addAtmSplit = (amount, description) => {
     if (amount > atmRemaining) {
       showToast(`Only ₹${atmRemaining.toLocaleString('en-IN')} left to account for`, 'error');
@@ -192,6 +211,16 @@ function App() {
     showToast(`Goal "${goalData.name}" created`, 'success');
   };
 
+  const updateGoal = (updated) => {
+    setGoals((prev) => prev.map((g) => (g.id === updated.id ? { ...g, ...updated } : g)));
+    showToast('Goal updated', 'success');
+  };
+
+  const deleteGoal = (id) => {
+    setGoals((prev) => prev.filter((g) => g.id !== id));
+    showToast('Goal deleted', 'success');
+  };
+
   // Toast handler
   const showToast = (message, type = 'info') => {
     setToast({ message, type });
@@ -201,7 +230,16 @@ function App() {
   // View content
   const renderView = () => {
     if (!landingDone) {
-      return <Landing onSignup={handleSignup} onLogin={handleLogin} />;
+      if (authScreen === 'login') {
+        return (
+          <LoginPage
+            onBack={() => setAuthScreen('landing')}
+            onSuccess={handleLogin}
+            onSignup={handleSignup}
+          />
+        );
+      }
+      return <Landing onSignup={handleSignup} onGoToLogin={() => setAuthScreen('login')} />;
     }
 
     if (!onboardingDone) {
@@ -239,6 +277,8 @@ function App() {
             onMergeDuplicate={mergeDuplicate}
             onKeepDuplicate={keepDuplicate}
             onAddExpense={() => setShowAddExpense(true)}
+            onUpdateTransaction={updateTransaction}
+            onDeleteTransaction={deleteTransaction}
           />
         );
       case 'goals':
@@ -247,6 +287,8 @@ function App() {
             goals={goals}
             transactions={transactions}
             onAddGoal={addGoal}
+            onUpdateGoal={updateGoal}
+            onDeleteGoal={deleteGoal}
             sipDismissed={sipDismissed}
             onDismissSip={() => setSipDismissed(true)}
             onAcceptSip={(goal) => {
@@ -304,6 +346,7 @@ function App() {
       setManualMode(false);
       setOnboardingDone(false);
       setLandingDone(false);
+      setAuthScreen('landing');
       setActiveView('dashboard');
       setActiveFilter(null);
       setSipDismissed(false);
@@ -321,6 +364,7 @@ function App() {
           activeView={activeView}
           setActiveView={setActiveView}
           onAddExpense={() => setShowAddExpense(true)}
+          onSearch={() => setShowSearch(true)}
           onRestart={handleRestart}
         />
       )}
@@ -328,8 +372,10 @@ function App() {
       {/* Main content — in-app sits in a rounded white surface with a 4px green frame */}
       {onboardingDone ? (
         <div className="flex-1 ml-56 overflow-hidden p-1">
-          <div ref={mainContentRef} className="h-full overflow-auto bg-white rounded-2xl">
-            {renderView()}
+          <div className="h-full bg-white rounded-2xl overflow-hidden">
+            <div ref={mainContentRef} className="h-full overflow-y-auto">
+              {renderView()}
+            </div>
           </div>
         </div>
       ) : (
@@ -351,6 +397,15 @@ function App() {
           atmRemaining={atmRemaining}
           onClose={() => setShowAtmSplit(false)}
           onAddSplit={addAtmSplit}
+        />
+      )}
+
+      {/* Search */}
+      {showSearch && (
+        <SearchModal
+          transactions={transactions}
+          onClose={() => setShowSearch(false)}
+          onNavigate={setActiveView}
         />
       )}
 

@@ -2,6 +2,9 @@ import { useState } from 'react';
 import { Plus, ChevronDown, Calendar, ArrowDown } from 'lucide-react';
 import { CATEGORIES, getCategoryChip } from '../../data/categories';
 import DuplicateBanner from './DuplicateBanner';
+import MerchantLogo from '../MerchantLogo';
+import CategoryIcon from '../CategoryIcon';
+import AddExpenseModal from '../modals/AddExpenseModal';
 
 const catName = (id) => CATEGORIES.find((c) => c.id === id)?.name || 'Other';
 
@@ -20,7 +23,7 @@ function sourceLabel(txn) {
   return BANKS[h];
 }
 
-function Dropdown({ label, value, options, onChange }) {
+function Dropdown({ label, value, options, onChange, leading }) {
   const [open, setOpen] = useState(false);
   return (
     <div className="relative">
@@ -28,8 +31,10 @@ function Dropdown({ label, value, options, onChange }) {
         onClick={() => setOpen((o) => !o)}
         className="flex items-center gap-2 px-3.5 py-2 border border-[#e5e7eb] rounded-lg text-sm text-[#374151] hover:bg-[#f9fafb] transition-colors"
       >
+        {leading}
         <span className="font-medium">
-          {label}: {value}
+          {label ? `${label}: ` : ''}
+          {value}
         </span>
         <ChevronDown size={15} className="text-[#9ca3af]" />
       </button>
@@ -58,20 +63,59 @@ function Dropdown({ label, value, options, onChange }) {
   );
 }
 
-export default function Spend({ transactions, onMergeDuplicate, onKeepDuplicate, onAddExpense }) {
+export default function Spend({
+  transactions,
+  onMergeDuplicate,
+  onKeepDuplicate,
+  onAddExpense,
+  onUpdateTransaction,
+  onDeleteTransaction,
+}) {
   const [category, setCategory] = useState('all');
   const [source, setSource] = useState('all');
+  const [range, setRange] = useState('all');
+  const [period, setPeriod] = useState('month');
+  const [editing, setEditing] = useState(null);
 
   const sorted = [...transactions].sort((a, b) => new Date(b.date) - new Date(a.date));
   const usedCats = [...new Set(sorted.map((t) => t.category))];
   const dup = sorted.find((t) => t.dup);
 
+  const inPeriod = (dateStr) => {
+    if (period === 'all') return true;
+    const d = new Date(dateStr);
+    const now = new Date();
+    if (period === 'month') return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+    if (period === 'lastmonth') {
+      const lm = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      return d.getMonth() === lm.getMonth() && d.getFullYear() === lm.getFullYear();
+    }
+    if (period === '3m') {
+      const cut = new Date(now);
+      cut.setMonth(cut.getMonth() - 3);
+      return d >= cut;
+    }
+    return true;
+  };
+
+  const inRange = (amt) => {
+    if (range === 'lt500') return amt < 500;
+    if (range === 'mid') return amt >= 500 && amt <= 2000;
+    if (range === 'gt2000') return amt > 2000;
+    return true;
+  };
+
   const filtered = sorted.filter((t) => {
     if (category !== 'all' && t.category !== category) return false;
     if (source === 'manual' && t.source !== 'manual') return false;
     if (source === 'bank' && t.source !== 'bank') return false;
+    if (!inRange(t.amount)) return false;
+    if (!inPeriod(t.date)) return false;
     return true;
   });
+
+  const rangeLabel = { all: 'All', lt500: 'Under ₹500', mid: '₹500 – ₹2,000', gt2000: 'Over ₹2,000' }[range];
+  const periodLabel = { month: 'This Month', lastmonth: 'Last Month', '3m': 'Last 3 Months', all: 'All Time' }[period];
 
   if (sorted.length === 0) {
     return (
@@ -134,16 +178,31 @@ export default function Spend({ transactions, onMergeDuplicate, onKeepDuplicate,
             ]}
             onChange={setSource}
           />
-          <button className="flex items-center gap-2 px-3.5 py-2 border border-[#e5e7eb] rounded-lg text-sm font-medium text-[#374151] hover:bg-[#f9fafb] transition-colors">
-            Range: All
-            <ChevronDown size={15} className="text-[#9ca3af]" />
-          </button>
+          <Dropdown
+            label="Range"
+            leading={<span className="text-[#9ca3af]">₹</span>}
+            value={rangeLabel}
+            options={[
+              { label: 'All', value: 'all' },
+              { label: 'Under ₹500', value: 'lt500' },
+              { label: '₹500 – ₹2,000', value: 'mid' },
+              { label: 'Over ₹2,000', value: 'gt2000' },
+            ]}
+            onChange={setRange}
+          />
         </div>
-        <button className="flex items-center gap-2 px-3.5 py-2 border border-[#e5e7eb] rounded-lg text-sm font-medium text-[#374151] hover:bg-[#f9fafb] transition-colors">
-          <Calendar size={15} className="text-[#9ca3af]" />
-          This Month
-          <ChevronDown size={15} className="text-[#9ca3af]" />
-        </button>
+        <Dropdown
+          label=""
+          leading={<Calendar size={15} className="text-[#9ca3af]" />}
+          value={periodLabel}
+          options={[
+            { label: 'This Month', value: 'month' },
+            { label: 'Last Month', value: 'lastmonth' },
+            { label: 'Last 3 Months', value: '3m' },
+            { label: 'All Time', value: 'all' },
+          ]}
+          onChange={setPeriod}
+        />
       </div>
 
       {/* Table */}
@@ -169,12 +228,18 @@ export default function Spend({ transactions, onMergeDuplicate, onKeepDuplicate,
               return (
                 <tr key={txn.id} className={`hover:bg-[#f9fafb] transition-colors ${txn.dup ? 'bg-[#FBF7EF]' : ''}`}>
                   <td className="px-6 py-4 text-sm text-[#9ca3af] whitespace-nowrap">{formatDate(txn.date)}</td>
-                  <td className="px-6 py-4 text-sm font-medium text-[#111827]">{txn.merchant}</td>
+                  <td className="px-6 py-4">
+                    <div className="flex items-center gap-3">
+                      <MerchantLogo name={txn.merchant} size={32} />
+                      <span className="text-sm font-medium text-[#111827]">{txn.merchant}</span>
+                    </div>
+                  </td>
                   <td className="px-6 py-4">
                     <span
-                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium"
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium"
                       style={{ backgroundColor: chip.bg, color: chip.text }}
                     >
+                      <CategoryIcon id={txn.category} size={13} />
                       {catName(txn.category)}
                     </span>
                   </td>
@@ -183,7 +248,12 @@ export default function Spend({ transactions, onMergeDuplicate, onKeepDuplicate,
                     −₹{txn.amount.toLocaleString('en-IN')}
                   </td>
                   <td className="px-6 py-4 text-right">
-                    <button className="text-sm font-medium text-[#6b7280] hover:text-[#111827]">Edit</button>
+                    <button
+                      onClick={() => setEditing(txn)}
+                      className="text-sm font-medium text-[#6b7280] hover:text-[#111827]"
+                    >
+                      Edit
+                    </button>
                   </td>
                 </tr>
               );
@@ -191,6 +261,21 @@ export default function Spend({ transactions, onMergeDuplicate, onKeepDuplicate,
           </tbody>
         </table>
       </div>
+
+      {editing && (
+        <AddExpenseModal
+          initial={editing}
+          onClose={() => setEditing(null)}
+          onSave={(data) => {
+            onUpdateTransaction(data);
+            setEditing(null);
+          }}
+          onDelete={(id) => {
+            onDeleteTransaction(id);
+            setEditing(null);
+          }}
+        />
+      )}
     </div>
   );
 }

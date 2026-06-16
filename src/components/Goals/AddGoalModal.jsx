@@ -1,13 +1,14 @@
 import { useState } from 'react';
-import { X, Plus, Check } from 'lucide-react';
+import { X, Plus, Check, Trash2 } from 'lucide-react';
 import { CATEGORIES } from '../../data/categories';
 
-export default function AddGoalModal({ onClose, onSave }) {
-  const [name, setName] = useState('');
-  const [target, setTarget] = useState('');
-  const [monthly, setMonthly] = useState('');
-  const [deadline, setDeadline] = useState('');
-  const [linked, setLinked] = useState([]);
+export default function AddGoalModal({ onClose, onSave, onDelete, initial }) {
+  const isEdit = Boolean(initial);
+  const [name, setName] = useState(initial?.name || '');
+  const [target, setTarget] = useState(initial ? String(initial.target) : '');
+  const [monthly, setMonthly] = useState(initial?.monthly ? String(initial.monthly) : '');
+  const [deadline, setDeadline] = useState(initial?.deadline || '');
+  const [linked, setLinked] = useState(initial?.linked || []);
 
   const toggleCategory = (catId) =>
     setLinked((prev) => (prev.includes(catId) ? prev.filter((c) => c !== catId) : [...prev, catId]));
@@ -15,9 +16,10 @@ export default function AddGoalModal({ onClose, onSave }) {
   const handleSave = () => {
     if (name && target) {
       onSave({
+        ...(initial || {}),
         name,
         target: parseFloat(target),
-        saved: 0,
+        saved: initial?.saved ?? 0,
         monthly: monthly ? parseFloat(monthly) : 0,
         deadline,
         linked,
@@ -32,7 +34,7 @@ export default function AddGoalModal({ onClose, onSave }) {
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-xl">
         <div className="flex justify-between items-start px-8 pt-7 pb-2">
-          <h2 className="font-display text-3xl text-[#111827]">Declare a goal</h2>
+          <h2 className="font-display text-3xl text-[#111827]">{isEdit ? 'Edit goal' : 'Declare a goal'}</h2>
           <button onClick={onClose} className="p-1 hover:bg-[#f3f4f6] rounded-lg transition-colors">
             <X size={20} className="text-[#6b7280]" />
           </button>
@@ -111,7 +113,17 @@ export default function AddGoalModal({ onClose, onSave }) {
           </div>
         </div>
 
-        <div className="px-8 py-5 flex justify-end gap-3">
+        <div className="px-8 py-5 flex items-center gap-3">
+          {isEdit && onDelete && (
+            <button
+              onClick={() => onDelete(initial.id)}
+              className="p-2.5 border border-[#fee2e2] text-red-500 rounded-lg hover:bg-[#fef2f2] transition-colors"
+              aria-label="Delete goal"
+            >
+              <Trash2 size={16} />
+            </button>
+          )}
+          <div className="flex-1" />
           <button
             onClick={onClose}
             className="px-5 py-2.5 border border-[#e5e7eb] text-[#374151] text-sm font-medium rounded-lg hover:bg-[#f9fafb] transition-colors"
@@ -123,7 +135,7 @@ export default function AddGoalModal({ onClose, onSave }) {
             disabled={!name || !target}
             className="px-6 py-2.5 bg-[#15803D] text-white text-sm font-medium rounded-lg hover:bg-[#136a34] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
-            Done
+            {isEdit ? 'Save changes' : 'Done'}
           </button>
         </div>
       </div>

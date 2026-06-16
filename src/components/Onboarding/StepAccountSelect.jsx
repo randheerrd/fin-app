@@ -1,12 +1,11 @@
+import { useState } from 'react';
 import { ArrowLeft, ArrowRight, Check, Plus } from 'lucide-react';
+import BrandLogo from '../BrandLogo';
+import { bankBrand } from '../../lib/logos';
+import AddBankModal from '../modals/AddBankModal';
 
-const BANK_COLORS = { hdfc: '#ED232A', axis: '#97144D', icici: '#F58220' };
-function bankColor(name = '') {
-  const key = Object.keys(BANK_COLORS).find((k) => name.toLowerCase().includes(k));
-  return key ? BANK_COLORS[key] : '#0E3F2E';
-}
-
-export default function StepAccountSelect({ accounts, selected, onToggle, onContinue, onBack }) {
+export default function StepAccountSelect({ accounts, selected, onToggle, onContinue, onBack, onAddAnother }) {
+  const [showAdd, setShowAdd] = useState(false);
   const selectedCount = selected.filter(Boolean).length;
 
   return (
@@ -36,12 +35,8 @@ export default function StepAccountSelect({ accounts, selected, onToggle, onCont
             >
               {selected[i] && <Check size={13} className="text-white" strokeWidth={3} />}
             </span>
-            <span
-              className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 font-bold text-white"
-              style={{ backgroundColor: bankColor(acc.bank) }}
-            >
-              {(acc.bank || '?').charAt(0)}
-            </span>
+            <BrandLogo domain={bankBrand(acc.bank).domain} label={acc.bank} bg={bankBrand(acc.bank).bg} size={40} />
+
             <span className="min-w-0">
               <span className="block text-sm font-semibold text-[#111827]">
                 {acc.bank} · {acc.type}
@@ -54,10 +49,23 @@ export default function StepAccountSelect({ accounts, selected, onToggle, onCont
         ))}
       </div>
 
-      <button className="flex items-center gap-1.5 text-sm text-[#374151] hover:text-[#111827] mb-10">
+      <button
+        onClick={() => setShowAdd(true)}
+        className="flex items-center gap-1.5 text-sm text-[#374151] hover:text-[#111827] mb-10"
+      >
         <Plus size={15} className="text-[#9ca3af]" />
         Add another
       </button>
+
+      {showAdd && (
+        <AddBankModal
+          onClose={() => setShowAdd(false)}
+          onAdd={(data) => {
+            onAddAnother(data);
+            setShowAdd(false);
+          }}
+        />
+      )}
 
       <div className="flex items-center justify-between">
         <button

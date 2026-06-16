@@ -1,8 +1,8 @@
 import { CATEGORIES, getCategoryChip } from '../../data/categories';
+import CategoryIcon from '../CategoryIcon';
 
 const fmt = (n) => `₹${Math.round(n).toLocaleString('en-IN')}`;
 const catName = (id) => CATEGORIES.find((c) => c.id === id)?.name || 'Other';
-const catEmoji = (id) => CATEGORIES.find((c) => c.id === id)?.emoji || '•';
 
 export default function GoalCard({ goal, onEdit }) {
   const progress = Math.min((goal.saved / goal.target) * 100, 100);
@@ -63,10 +63,10 @@ export default function GoalCard({ goal, onEdit }) {
             return (
               <span
                 key={id}
-                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium"
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium"
                 style={{ backgroundColor: chip.bg, color: chip.text }}
               >
-                {catEmoji(id)} {catName(id)}
+                <CategoryIcon id={id} size={13} /> {catName(id)}
               </span>
             );
           })}

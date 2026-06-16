@@ -8,6 +8,7 @@ import {
 } from '../../lib/utils';
 import { CATEGORIES, CHART_PALETTE, getCategoryChip } from '../../data/categories';
 import MerchantLogo from '../MerchantLogo';
+import CategoryIcon from '../CategoryIcon';
 
 const fmt = (n) => `₹${Math.round(n).toLocaleString('en-IN')}`;
 const catName = (id) => CATEGORIES.find((c) => c.id === id)?.name || 'Other';
@@ -383,9 +384,10 @@ export default function Dashboard({
                 </div>
                 <div className="text-right pr-4">
                   <span
-                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium"
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium"
                     style={{ backgroundColor: chip.bg, color: chip.text }}
                   >
+                    <CategoryIcon id={txn.category} size={13} />
                     {catName(txn.category)}
                   </span>
                 </div>

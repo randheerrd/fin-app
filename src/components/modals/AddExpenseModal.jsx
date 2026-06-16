@@ -1,116 +1,131 @@
 import { useState } from 'react';
-import * as Dialog from '@radix-ui/react-dialog';
-import { X } from 'lucide-react';
+import { X, Trash2, Check } from 'lucide-react';
 import { CATEGORIES } from '../../data/categories';
 import { getToday } from '../../lib/utils';
+import CategoryIcon from '../CategoryIcon';
 
-export default function AddExpenseModal({ onClose, onSave }) {
-  const [amount, setAmount] = useState('');
-  const [category, setCategory] = useState('food');
-  const [date, setDate] = useState(getToday());
-  const [note, setNote] = useState('');
+export default function AddExpenseModal({ onClose, onSave, onDelete, initial }) {
+  const isEdit = Boolean(initial);
+  const [amount, setAmount] = useState(initial ? String(initial.amount) : '');
+  const [category, setCategory] = useState(initial?.category || 'food');
+  const [date, setDate] = useState(initial?.date || getToday());
+  const [note, setNote] = useState(initial?.merchant || '');
 
   const handleSave = () => {
     if (amount && parseFloat(amount) > 0) {
       onSave({
+        ...(initial || {}),
         amount: parseFloat(amount),
         category,
         date,
-        merchant: note || `${CATEGORIES.find(c => c.id === category)?.name} expense`,
+        merchant: note || `${CATEGORIES.find((c) => c.id === category)?.name} expense`,
         atm: false,
       });
     }
   };
 
+  const inputClass =
+    'w-full px-4 py-3 border border-[#e5e7eb] rounded-lg text-sm text-[#111827] outline-none focus:border-[#0E3F2E] placeholder:text-[#9ca3af]';
+
   return (
-    <Dialog.Root open={true} onOpenChange={onClose}>
-      <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 bg-black/30 z-40" />
-        <Dialog.Content className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-white border border-[#e5e7eb] rounded-xl shadow-lg max-w-md w-full z-50">
-          <div className="flex justify-between items-center px-6 py-4 border-b border-[#f3f4f6]">
-            <Dialog.Title className="font-semibold text-[#111827]">Add Expense</Dialog.Title>
-            <Dialog.Close asChild>
-              <button className="p-1.5 hover:bg-[#f3f4f6] rounded-lg transition-colors">
-                <X size={18} className="text-[#6b7280]" />
-              </button>
-            </Dialog.Close>
+    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-xl">
+        <div className="flex justify-between items-start px-8 pt-7 pb-2">
+          <h2 className="font-display text-3xl text-[#111827]">{isEdit ? 'Edit expense' : 'Add expense'}</h2>
+          <button onClick={onClose} className="p-1 hover:bg-[#f3f4f6] rounded-lg transition-colors">
+            <X size={20} className="text-[#6b7280]" />
+          </button>
+        </div>
+
+        <div className="px-8 py-5 space-y-5">
+          <div className="grid grid-cols-2 gap-5">
+            <div>
+              <label className="block text-sm font-medium text-[#374151] mb-1.5">Amount</label>
+              <div className="flex items-center border border-[#e5e7eb] rounded-lg overflow-hidden focus-within:border-[#0E3F2E]">
+                <span className="pl-4 pr-1 text-[#9ca3af] text-sm">₹</span>
+                <input
+                  autoFocus
+                  type="number"
+                  placeholder="0"
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                  className="flex-1 px-2 py-3 text-sm text-[#111827] outline-none placeholder:text-[#9ca3af]"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-[#374151] mb-1.5">Date</label>
+              <input
+                type="date"
+                value={date}
+                max={getToday()}
+                onChange={(e) => setDate(e.target.value)}
+                className={inputClass}
+              />
+            </div>
           </div>
 
-          <div className="px-6 py-5 space-y-5">
-            <div>
-              <input
-                autoFocus
-                type="number"
-                placeholder="0"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                className="w-full text-4xl font-bold text-[#0E3F2E] outline-none placeholder-[#d1d5db]"
-              />
-              <p className="text-[#9ca3af] text-xs mt-1">Amount in rupees</p>
-            </div>
+          <div>
+            <label className="block text-sm font-medium text-[#374151] mb-1.5">Merchant / note</label>
+            <input
+              type="text"
+              placeholder="e.g. Swiggy dinner"
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              className={inputClass}
+            />
+          </div>
 
-            <div>
-              <p className="text-xs font-medium text-[#6b7280] mb-3">Category</p>
-              <div className="grid grid-cols-4 gap-2">
-                {CATEGORIES.map(cat => (
+          <div>
+            <label className="block text-sm font-medium text-[#374151] mb-2.5">Category</label>
+            <div className="flex flex-wrap gap-2.5">
+              {CATEGORIES.map((cat) => {
+                const active = category === cat.id;
+                return (
                   <button
                     key={cat.id}
                     onClick={() => setCategory(cat.id)}
-                    className={`p-2.5 rounded-lg border transition-all text-center ${
-                      category === cat.id
-                        ? 'border-[#0E3F2E] bg-[#0E3F2E]/5'
-                        : 'border-[#f3f4f6] hover:border-[#e5e7eb] bg-[#f9fafb]'
+                    className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full border text-sm transition-colors ${
+                      active
+                        ? 'bg-[#0E3F2E] border-[#0E3F2E] text-white'
+                        : 'bg-white border-[#e5e7eb] text-[#374151] hover:bg-[#f9fafb]'
                     }`}
                   >
-                    <div className="text-xl mb-0.5">{cat.emoji}</div>
-                    <div className={`text-[10px] font-medium leading-tight ${category === cat.id ? 'text-[#0E3F2E]' : 'text-[#9ca3af]'}`}>
-                      {cat.name.split(' ')[0]}
-                    </div>
+                    {active ? <Check size={14} /> : <CategoryIcon id={cat.id} size={14} />}
+                    {cat.name}
                   </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-medium text-[#6b7280] mb-1.5">Date</label>
-                <input
-                  type="date"
-                  value={date}
-                  onChange={(e) => setDate(e.target.value)}
-                  max={getToday()}
-                  className="w-full border border-[#e5e7eb] rounded-lg px-3 py-2 text-[#111827] text-sm outline-none focus:border-[#0E3F2E]"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-[#6b7280] mb-1.5">Note (optional)</label>
-                <input
-                  type="text"
-                  placeholder="Details"
-                  value={note}
-                  onChange={(e) => setNote(e.target.value)}
-                  className="w-full border border-[#e5e7eb] rounded-lg px-3 py-2 text-[#111827] text-sm outline-none focus:border-[#0E3F2E] placeholder-[#d1d5db]"
-                />
-              </div>
+                );
+              })}
             </div>
           </div>
+        </div>
 
-          <div className="px-6 py-4 border-t border-[#f3f4f6] flex gap-3">
-            <Dialog.Close asChild>
-              <button className="flex-1 py-2.5 border border-[#e5e7eb] text-[#374151] text-sm font-medium rounded-lg hover:bg-[#f9fafb] transition-colors">
-                Cancel
-              </button>
-            </Dialog.Close>
+        <div className="px-8 py-5 flex items-center gap-3">
+          {isEdit && onDelete && (
             <button
-              onClick={handleSave}
-              disabled={!amount || parseFloat(amount) <= 0}
-              className="flex-1 py-2.5 bg-[#0E3F2E] text-white text-sm font-semibold rounded-lg hover:bg-[#0a3122] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              onClick={() => onDelete(initial.id)}
+              className="p-2.5 border border-[#fee2e2] text-red-500 rounded-lg hover:bg-[#fef2f2] transition-colors"
+              aria-label="Delete expense"
             >
-              Save
+              <Trash2 size={16} />
             </button>
-          </div>
-        </Dialog.Content>
-      </Dialog.Portal>
-    </Dialog.Root>
+          )}
+          <div className="flex-1" />
+          <button
+            onClick={onClose}
+            className="px-5 py-2.5 border border-[#e5e7eb] text-[#374151] text-sm font-medium rounded-lg hover:bg-[#f9fafb] transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={!amount || parseFloat(amount) <= 0}
+            className="px-6 py-2.5 bg-[#15803D] text-white text-sm font-medium rounded-lg hover:bg-[#136a34] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            {isEdit ? 'Save changes' : 'Done'}
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }

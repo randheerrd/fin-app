@@ -1,16 +1,8 @@
 import { useState } from 'react';
 import { Shield } from 'lucide-react';
-
-const BANK_COLORS = {
-  hdfc: '#004C8F',
-  axis: '#97144D',
-  icici: '#F58220',
-};
-
-function bankColor(name = '') {
-  const key = Object.keys(BANK_COLORS).find((k) => name.toLowerCase().includes(k));
-  return key ? BANK_COLORS[key] : '#0E3F2E';
-}
+import BrandLogo from '../BrandLogo';
+import { bankBrand } from '../../lib/logos';
+import AddBankModal from '../modals/AddBankModal';
 
 function Toggle({ checked, onChange }) {
   return (
@@ -49,12 +41,30 @@ export default function Settings({
   setBanks,
   transactions,
   setTransactions,
-  onLinkBank,
 }) {
-  const [fullName, setFullName] = useState('Randheer Kumar');
-  const [email, setEmail] = useState('');
-  const [mobile, setMobile] = useState('+91 7346432221');
-  const [city, setCity] = useState('');
+  const [showAddBank, setShowAddBank] = useState(false);
+  const handleAddBank = (data) => {
+    setBanks((prev) => [...prev, { name: data.name, type: data.type, mask: data.mask, synced: 'just now' }]);
+    setShowAddBank(false);
+  };
+  // Saved profile (read-only by default) vs the editable draft.
+  const [profile, setProfile] = useState({
+    fullName: 'Randheer Kumar',
+    email: '',
+    mobile: '+91 7346432221',
+    city: '',
+  });
+  const [editingProfile, setEditingProfile] = useState(false);
+  const [draft, setDraft] = useState(profile);
+
+  const startEdit = () => {
+    setDraft(profile);
+    setEditingProfile(true);
+  };
+  const saveProfile = () => {
+    setProfile(draft);
+    setEditingProfile(false);
+  };
 
   const [incomeInput, setIncomeInput] = useState(income.toString());
   const [budgetInput, setBudgetInput] = useState(budget.toString());
@@ -110,55 +120,96 @@ export default function Settings({
           <div className="w-14 h-14 bg-[#0E3F2E] rounded-full flex items-center justify-center mb-3">
             <span className="text-white font-bold">RK</span>
           </div>
-          <p className="font-display text-2xl text-[#111827]">{fullName || 'Your name'}</p>
+          <p className="font-display text-2xl text-[#111827]">{profile.fullName || 'Your name'}</p>
           <p className="text-sm text-[#9ca3af] mt-0.5">Member since June 2026</p>
         </div>
 
         <div className="space-y-6">
-          {/* Profile fields */}
+          {/* Profile — read-only view by default, explicit edit mode */}
           <div className={`${cardClass} p-6`}>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-              <div>
-                <label className="block text-sm font-medium text-[#374151] mb-1.5">Full Name</label>
-                <input
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  className={inputClass}
-                  placeholder="Enter name"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-[#374151] mb-1.5">Email Address</label>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className={inputClass}
-                  placeholder="randheerkumar149@gmail.com"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-[#374151] mb-1.5">Mobile No</label>
-                <input
-                  value={mobile}
-                  onChange={(e) => setMobile(e.target.value)}
-                  className={inputClass}
-                  placeholder="+91"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-[#374151] mb-1.5">City</label>
-                <input
-                  value={city}
-                  onChange={(e) => setCity(e.target.value)}
-                  className={inputClass}
-                  placeholder="Enter City"
-                />
-              </div>
-            </div>
-            <button className="mt-5 px-5 py-2.5 bg-[#0E3F2E] text-white text-sm font-medium rounded-lg hover:bg-[#0a3122] transition-colors">
-              Save Changes
-            </button>
+            {!editingProfile ? (
+              <>
+                <div className="flex items-center justify-between mb-5">
+                  <p className="text-sm font-semibold text-[#111827]">Profile</p>
+                  <button
+                    onClick={startEdit}
+                    className="px-4 py-2 border border-[#e5e7eb] text-[#374151] text-sm font-medium rounded-lg hover:bg-[#f9fafb] transition-colors"
+                  >
+                    Edit profile
+                  </button>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-5 gap-x-8">
+                  {[
+                    { label: 'Full Name', value: profile.fullName || '—' },
+                    { label: 'Email Address', value: profile.email || '—' },
+                    { label: 'Mobile No', value: profile.mobile || '—' },
+                    { label: 'City', value: profile.city || '—' },
+                  ].map((f) => (
+                    <div key={f.label}>
+                      <p className="text-xs text-[#9ca3af] mb-1">{f.label}</p>
+                      <p className="text-sm font-medium text-[#111827]">{f.value}</p>
+                    </div>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                  <div>
+                    <label className="block text-sm font-medium text-[#374151] mb-1.5">Full Name</label>
+                    <input
+                      value={draft.fullName}
+                      onChange={(e) => setDraft((d) => ({ ...d, fullName: e.target.value }))}
+                      className={inputClass}
+                      placeholder="Enter name"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-[#374151] mb-1.5">Email Address</label>
+                    <input
+                      type="email"
+                      value={draft.email}
+                      onChange={(e) => setDraft((d) => ({ ...d, email: e.target.value }))}
+                      className={inputClass}
+                      placeholder="randheerkumar149@gmail.com"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-[#374151] mb-1.5">Mobile No</label>
+                    <input
+                      value={draft.mobile}
+                      disabled
+                      readOnly
+                      className={`${inputClass} bg-[#f9fafb] text-[#9ca3af] cursor-not-allowed`}
+                    />
+                    <p className="text-xs text-[#9ca3af] mt-1">Your phone number can't be changed.</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-[#374151] mb-1.5">City</label>
+                    <input
+                      value={draft.city}
+                      onChange={(e) => setDraft((d) => ({ ...d, city: e.target.value }))}
+                      className={inputClass}
+                      placeholder="Enter City"
+                    />
+                  </div>
+                </div>
+                <div className="flex gap-3 mt-5">
+                  <button
+                    onClick={() => setEditingProfile(false)}
+                    className="px-5 py-2.5 border border-[#e5e7eb] text-[#374151] text-sm font-medium rounded-lg hover:bg-[#f9fafb] transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={saveProfile}
+                    className="px-5 py-2.5 bg-[#0E3F2E] text-white text-sm font-medium rounded-lg hover:bg-[#0a3122] transition-colors"
+                  >
+                    Save Changes
+                  </button>
+                </div>
+              </>
+            )}
           </div>
 
           {/* Notifications */}
@@ -204,7 +255,7 @@ export default function Settings({
                 <div className="text-center py-6">
                   <p className="text-[#9ca3af] text-sm mb-4">No bank connected</p>
                   <button
-                    onClick={onLinkBank}
+                    onClick={() => setShowAddBank(true)}
                     className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#0E3F2E] text-white text-sm font-medium rounded-lg hover:bg-[#0a3122] transition-colors"
                   >
                     Link a bank
@@ -218,14 +269,7 @@ export default function Settings({
                       className="flex items-center justify-between gap-3 p-3 border border-[#f3f4f6] rounded-xl"
                     >
                       <div className="flex items-center gap-3 min-w-0">
-                        <div
-                          className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
-                          style={{ backgroundColor: bankColor(bank.name) }}
-                        >
-                          <span className="text-white font-bold text-sm">
-                            {(bank.name || '?').charAt(0)}
-                          </span>
-                        </div>
+                        <BrandLogo domain={bankBrand(bank.name).domain} label={bank.name} bg={bankBrand(bank.name).bg} size={40} />
                         <div className="min-w-0">
                           <p className="text-sm font-medium text-[#111827] truncate">
                             {bank.name} · {bank.type}
@@ -254,7 +298,7 @@ export default function Settings({
                     </div>
                   ))}
                   <button
-                    onClick={onLinkBank}
+                    onClick={() => setShowAddBank(true)}
                     className="mt-1 px-4 py-2.5 bg-[#0E3F2E] text-white text-sm font-medium rounded-lg hover:bg-[#0a3122] transition-colors"
                   >
                     + Link another bank
@@ -379,6 +423,8 @@ export default function Settings({
           </div>
         </div>
       )}
+
+      {showAddBank && <AddBankModal onClose={() => setShowAddBank(false)} onAdd={handleAddBank} />}
     </div>
   );
 }

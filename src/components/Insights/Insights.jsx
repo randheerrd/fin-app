@@ -1,4 +1,5 @@
 import { Link, ArrowUp } from 'lucide-react';
+import CategoryIcon from '../CategoryIcon';
 
 const fmt = (n) => `₹${Math.round(n).toLocaleString('en-IN')}`;
 
@@ -132,7 +133,7 @@ export default function Insights({ transactions, manualMode, onLinkBank }) {
         {/* Food & Dining */}
         <div className="border border-[#ECEEF0] rounded-2xl shadow-[0_1px_2px_rgba(16,24,40,0.04)] p-6">
           <div className="flex items-center gap-2 mb-4">
-            <Tag bg="#FBF1E5" text="#B45309">🍴 Food &amp; Dinning</Tag>
+            <Tag bg="#FBF1E5" text="#B45309"><CategoryIcon id="food" size={12} /> Food &amp; Dinning</Tag>
             <Tag bg="#FEECEC" text="#DC2626">
               <ArrowUp size={12} /> {foodPct}% vs May
             </Tag>
@@ -169,7 +170,7 @@ export default function Insights({ transactions, manualMode, onLinkBank }) {
         {/* Subscriptions */}
         <div className="border border-[#ECEEF0] rounded-2xl shadow-[0_1px_2px_rgba(16,24,40,0.04)] p-6">
           <div className="mb-4">
-            <Tag bg="#F3E8FF" text="#7C3AED">🎟 Subscription</Tag>
+            <Tag bg="#F3E8FF" text="#7C3AED"><CategoryIcon id="subscriptions" size={12} /> Subscription</Tag>
           </div>
           <p className="text-base text-[#111827] mb-1">
             You're paying <span className="font-semibold">{fmt(subTotal)}</span> in subscriptions this month
