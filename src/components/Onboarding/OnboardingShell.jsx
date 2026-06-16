@@ -10,8 +10,10 @@ const STEP_TO_DOT = { path: 1, 'track-setup': 2, 'goal-setup': 2, verify: 3 };
 export default function OnboardingShell({ onComplete }) {
   const [step, setStep] = useState('path');
   const [path, setPath] = useState(null);
-  const [income, setIncome] = useState(100000);
-  const [budget, setBudget] = useState(50000);
+  // 0 = not set. The track path fills these; the goal path leaves them empty
+  // so the dashboard prompts the user to add them.
+  const [income, setIncome] = useState(0);
+  const [budget, setBudget] = useState(0);
   const [goal, setGoal] = useState(null);
 
   const activeDot = STEP_TO_DOT[step] || 1;

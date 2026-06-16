@@ -161,8 +161,10 @@ export default function Dashboard({
   onAddExpense,
   onAtmSplit,
   onViewAll,
+  onSetupBudget,
 }) {
   const [activeSeg, setActiveSeg] = useState(null);
+  const budgetSet = budget > 0;
   const totalSpent = getTotalSpent(transactions, atmRemaining);
   const topCategories = getTopCategories(transactions, 3);
   const dayOfMonth = getDayOfMonth();
@@ -250,6 +252,22 @@ export default function Dashboard({
         </div>
       )}
 
+      {/* Prompt to set income/budget when they weren't entered during onboarding */}
+      {!budgetSet && (
+        <div className="flex items-center justify-between gap-4 bg-[#F0F7F3] border border-[#0E3F2E]/15 rounded-xl px-5 py-4 mb-6">
+          <div>
+            <p className="text-sm font-semibold text-[#111827]">Add your monthly income &amp; budget</p>
+            <p className="text-xs text-[#9ca3af]">Set them once to unlock budget tracking and clearer insights.</p>
+          </div>
+          <button
+            onClick={onSetupBudget}
+            className="px-4 py-2 bg-[#0E3F2E] text-white text-sm font-medium rounded-lg hover:bg-[#0a3122] transition-colors flex-shrink-0"
+          >
+            Add now
+          </button>
+        </div>
+      )}
+
       {/* Stat cards */}
       <div className="grid grid-cols-4 gap-5 mb-6">
         <StatCard
@@ -260,9 +278,9 @@ export default function Dashboard({
         />
         <StatCard
           label="Budget Left"
-          value={budgetLeft.toLocaleString('en-IN')}
-          sub={`${daysLeft} days to go`}
-          subColor="text-red-500"
+          value={budgetSet ? budgetLeft.toLocaleString('en-IN') : '—'}
+          sub={budgetSet ? `${daysLeft} days to go` : 'Add a budget'}
+          subColor={budgetSet ? 'text-red-500' : 'text-[#9ca3af]'}
         />
         <StatCard
           label="Top Categories"
@@ -281,18 +299,33 @@ export default function Dashboard({
         {/* This month */}
         <div className="border border-[#ECEEF0] rounded-2xl shadow-[0_1px_2px_rgba(16,24,40,0.04)] p-6">
           <p className="text-xs uppercase tracking-wide text-[#9ca3af] font-medium mb-4">This Month</p>
-          <div className="bg-[#f9fafb] rounded-xl p-4 mb-5">
-            <p className="text-lg font-bold text-[#111827] mb-3">
-              {fmt(totalSpent)} <span className="text-[#9ca3af] font-medium text-base">/ {fmt(budget)}</span>
-            </p>
-            <div className="w-full bg-[#e5e7eb] rounded-full h-2 overflow-hidden mb-2">
-              <div className="h-full bg-[#0E3F2E] rounded-full" style={{ width: `${Math.min(budgetUsed, 100)}%` }} />
+          {budgetSet ? (
+            <div className="bg-[#f9fafb] rounded-xl p-4 mb-5">
+              <p className="text-lg font-bold text-[#111827] mb-3">
+                {fmt(totalSpent)} <span className="text-[#9ca3af] font-medium text-base">/ {fmt(budget)}</span>
+              </p>
+              <div className="w-full bg-[#e5e7eb] rounded-full h-2 overflow-hidden mb-2">
+                <div className="h-full bg-[#0E3F2E] rounded-full" style={{ width: `${Math.min(budgetUsed, 100)}%` }} />
+              </div>
+              <div className="flex justify-between text-xs text-[#9ca3af]">
+                <span>{budgetUsed}% used</span>
+                <span>{daysLeft} days left</span>
+              </div>
             </div>
-            <div className="flex justify-between text-xs text-[#9ca3af]">
-              <span>{budgetUsed}% used</span>
-              <span>{daysLeft} days left</span>
+          ) : (
+            <div className="bg-[#f9fafb] rounded-xl p-4 mb-5 flex items-center justify-between gap-3">
+              <div>
+                <p className="text-lg font-bold text-[#111827]">{fmt(totalSpent)} spent</p>
+                <p className="text-xs text-[#9ca3af] mt-0.5">No budget set yet.</p>
+              </div>
+              <button
+                onClick={onSetupBudget}
+                className="text-sm font-medium text-[#0E3F2E] hover:underline flex-shrink-0"
+              >
+                Set budget
+              </button>
             </div>
-          </div>
+          )}
           <div className="space-y-4">
             {topCategories.map((c) => (
               <div key={c.category}>

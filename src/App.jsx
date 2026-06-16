@@ -247,8 +247,8 @@ function App() {
     setAtmRemaining(0);
     setBanks([]);
     setManualMode(true);
-    if (inc) setIncome(inc);
-    if (bud) setBudget(bud);
+    setIncome(inc ?? 0); // 0 = not set yet (goal path) → dashboard prompts for it
+    setBudget(bud ?? 0);
     setGoals(goal ? [{ id: crypto.randomUUID(), ...goal, isNew: true, detected: false }] : []);
     setOnboardingDone(true);
     setActiveView('dashboard');
@@ -397,6 +397,7 @@ function App() {
             onAddExpense={() => setShowAddExpense(true)}
             onAtmSplit={() => setShowAtmSplit(true)}
             onViewAll={() => setActiveView('spend')}
+            onSetupBudget={() => setActiveView('settings')}
           />
         );
       case 'spend':
