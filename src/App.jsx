@@ -279,7 +279,7 @@ function App() {
   };
 
   return (
-    <div className="flex h-screen bg-bg overflow-hidden">
+    <div className="flex h-screen bg-bg-primary overflow-hidden">
       {/* Sidebar */}
       {onboardingDone && (
         <Sidebar
@@ -291,7 +291,7 @@ function App() {
       )}
 
       {/* Main content */}
-      <div className="flex-1 overflow-auto">
+      <div className={`flex-1 overflow-auto transition-all ${onboardingDone ? 'ml-64' : ''}`}>
         {renderView()}
       </div>
 

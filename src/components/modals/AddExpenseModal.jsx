@@ -25,24 +25,22 @@ export default function AddExpenseModal({ onClose, onSave }) {
   return (
     <Dialog.Root open={true} onOpenChange={onClose}>
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 bg-black/60 data-[state=open]:animate-fade-in z-40" />
-        <Dialog.Content className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-bg-secondary border border-neutral-700 rounded-xl shadow-xl max-w-md w-full p-0 data-[state=open]:animate-fade-in z-50">
+        <Dialog.Overlay className="fixed inset-0 bg-black/20 z-40" />
+        <Dialog.Content className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-white border border-bg-border rounded-lg shadow-md max-w-md w-full p-0 z-50">
           {/* Header */}
-          <div className="flex justify-between items-center p-6 border-b border-neutral-700">
-            <div>
-              <Dialog.Title className="font-serif text-2xl font-bold text-text-primary">
-                Add Expense
-              </Dialog.Title>
-            </div>
+          <div className="flex justify-between items-center p-6 border-b border-bg-border">
+            <Dialog.Title className="font-serif text-2xl font-bold text-text-primary">
+              Add Expense
+            </Dialog.Title>
             <Dialog.Close asChild>
-              <button className="p-2 hover:bg-bg-tertiary rounded-lg transition-colors text-text-secondary">
-                <X size={20} />
+              <button className="p-2 hover:bg-bg-secondary rounded-lg transition-colors">
+                <X size={20} className="text-text-secondary" />
               </button>
             </Dialog.Close>
           </div>
 
           {/* Body */}
-          <div className="p-6 space-y-6 max-h-[70vh] overflow-y-auto">
+          <div className="p-6 space-y-6">
             {/* Amount */}
             <div>
               <input
@@ -51,33 +49,35 @@ export default function AddExpenseModal({ onClose, onSave }) {
                 placeholder="0"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
-                className="w-full text-5xl font-serif text-emerald font-bold bg-transparent outline-none placeholder-text-tertiary"
+                className="w-full text-5xl font-serif font-bold text-accent bg-transparent outline-none placeholder-text-tertiary"
               />
-              <p className="text-text-tertiary text-sm mt-2">Amount in rupees</p>
+              <p className="text-text-secondary text-sm mt-2">Amount in rupees</p>
             </div>
 
-            {/* Category grid */}
+            {/* Category */}
             <div>
-              <p className="text-sm text-text-secondary font-medium mb-4">Category</p>
+              <p className="text-text-secondary text-sm font-medium mb-4">Category</p>
               <div className="grid grid-cols-4 gap-2">
                 {CATEGORIES.map(cat => (
                   <button
                     key={cat.id}
                     onClick={() => setCategory(cat.id)}
-                    className={`p-3 rounded-lg border-2 transition-all duration-200 text-center ${
+                    className={`p-3 rounded-lg border-2 transition-all text-center ${
                       category === cat.id
-                        ? 'bg-emerald/20 border-emerald text-emerald'
-                        : 'bg-bg-tertiary border-neutral-700 hover:border-neutral-600 text-text-secondary'
+                        ? 'border-accent bg-blue-50'
+                        : 'border-bg-border hover:border-bg-border bg-bg-secondary'
                     }`}
                   >
                     <div className="text-2xl mb-1">{cat.emoji}</div>
-                    <div className="text-xs font-medium truncate">{cat.name.split(' ')[0]}</div>
+                    <div className={`text-xs font-medium ${category === cat.id ? 'text-accent' : 'text-text-tertiary'}`}>
+                      {cat.name.split(' ')[0]}
+                    </div>
                   </button>
                 ))}
               </div>
             </div>
 
-            {/* Date and note */}
+            {/* Date and Note */}
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm text-text-secondary font-medium mb-2">Date</label>
@@ -86,7 +86,7 @@ export default function AddExpenseModal({ onClose, onSave }) {
                   value={date}
                   onChange={(e) => setDate(e.target.value)}
                   max={getToday()}
-                  className="w-full bg-bg-tertiary border border-neutral-700 rounded-lg px-3 py-2 text-text-primary text-sm outline-none focus:border-emerald focus:ring-2 focus:ring-emerald/20 transition-all"
+                  className="w-full border border-bg-border rounded-lg px-3 py-2 text-text-primary text-sm outline-none focus:border-accent focus:ring-1 focus:ring-accent/20"
                 />
               </div>
               <div>
@@ -96,23 +96,23 @@ export default function AddExpenseModal({ onClose, onSave }) {
                   placeholder="Details"
                   value={note}
                   onChange={(e) => setNote(e.target.value)}
-                  className="w-full bg-bg-tertiary border border-neutral-700 rounded-lg px-3 py-2 text-text-primary text-sm outline-none focus:border-emerald focus:ring-2 focus:ring-emerald/20 placeholder-text-tertiary transition-all"
+                  className="w-full border border-bg-border rounded-lg px-3 py-2 text-text-primary text-sm outline-none focus:border-accent focus:ring-1 focus:ring-accent/20 placeholder-text-tertiary"
                 />
               </div>
             </div>
           </div>
 
           {/* Footer */}
-          <div className="border-t border-neutral-700 p-6 flex gap-3 bg-bg-tertiary rounded-b-xl">
+          <div className="border-t border-bg-border p-6 flex gap-3 bg-bg-secondary rounded-b-lg">
             <Dialog.Close asChild>
-              <button className="flex-1 border border-neutral-700 text-text-secondary py-2.5 rounded-lg font-medium hover:bg-bg-secondary transition-all duration-200">
+              <button className="flex-1 border border-bg-border text-text-primary py-2.5 rounded-lg font-medium hover:bg-bg-primary transition-colors">
                 Cancel
               </button>
             </Dialog.Close>
             <button
               onClick={handleSave}
               disabled={!amount || parseFloat(amount) <= 0}
-              className="flex-1 bg-emerald text-bg py-2.5 rounded-lg font-semibold hover:bg-emerald-dark transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-md"
+              className="flex-1 bg-accent text-white py-2.5 rounded-lg font-semibold hover:bg-accent-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Save
             </button>
