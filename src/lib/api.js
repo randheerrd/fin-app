@@ -1,6 +1,9 @@
-// Account Aggregator API Service
-const AA_API_KEY = import.meta.env.VITE_AA_API_KEY || 'ogRSEDNNvdsGkVLOPllCoKcmG1ZZIwxd';
-const AA_BASE_URL = import.meta.env.VITE_AA_API_URL || 'https://api.sandbox.finbox.in';
+// Account Aggregator API Service.
+// NOTE: never put a real API secret here — Vite inlines VITE_* vars into the
+// public bundle. Point VITE_AA_API_URL at a backend proxy that holds the secret
+// server-side. With no proxy configured, the calls fall back to a demo mock.
+const AA_API_KEY = import.meta.env.VITE_AA_API_KEY || '';
+const AA_BASE_URL = import.meta.env.VITE_AA_API_URL || '';
 
 export const accountAggregatorAPI = {
   // Initialize AA consent flow with phone number
