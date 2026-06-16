@@ -45,7 +45,6 @@ function App() {
   const [activeView, setActiveView] = useState('dashboard');
   const [activeFilter, setActiveFilter] = useState(null);
   const [sipDismissed, setSipDismissed] = useState(false);
-  const [linkingMode, setLinkingMode] = useState(false);
 
   // Modal state
   const [showAddExpense, setShowAddExpense] = useState(false);
@@ -101,21 +100,6 @@ function App() {
     loadUserData(firebaseUser.uid).then((data) => {
       if (cancelled) return;
       const phone = firebaseUser.phoneNumber || '';
-      if (phone.includes(FRESH_DEMO_PHONE)) {
-        // Test account that always starts a clean new-user onboarding flow.
-        setTransactions([]);
-        setGoals([]);
-        setBanks([]);
-        setRecurring([]);
-        setAtmRemaining(0);
-        setManualMode(false);
-        setIncome(75000);
-        setBudget(45000);
-        setLandingDone(true);
-        setOnboardingDone(false);
-        setHydrated(true);
-        return;
-      }
       if (data && (data.transactions?.length || data.onboardingDone)) {
         setIncome(data.income ?? 75000);
         setBudget(data.budget ?? 45000);
@@ -128,7 +112,7 @@ function App() {
         setLandingDone(true);
         setOnboardingDone(true);
         setActiveView('dashboard');
-      } else if ((firebaseUser.phoneNumber || '').includes(DEMO_PHONE)) {
+      } else if (phone.includes(DEMO_PHONE)) {
         // Demo/test account — preload 6 months of mock data, skip onboarding.
         setIncome(100000);
         setBudget(45000);
@@ -225,17 +209,9 @@ function App() {
   // Signup and login are distinct screens. With real Firebase both authenticate
   // by phone OTP, but signup leads into onboarding while login hydrates the
   // returning user's data (decided in the hydrate effect).
-  const handleSignup = () => {
-    if (firebaseEnabled) {
-      setAuthScreen('signup');
-      return;
-    }
-    setLandingDone(true);
-  };
-
-  const handleSignupSuccess = () => {
-    setLandingDone(true); // new user → onboarding (hydrate finds no saved data)
-  };
+  // Signup → straight into onboarding (phone verification happens at step 3,
+  // not as an upfront gate).
+  const handleSignup = () => setLandingDone(true);
 
   const handleLogin = () => {
     if (firebaseEnabled) {
@@ -264,25 +240,23 @@ function App() {
     localStorage.removeItem('aa_pending');
   };
 
-  const handleManualMode = () => {
+  // Onboarding finished (after phone verification). No bank yet — manual mode;
+  // bank linking happens later from Settings.
+  const handleOnboardingComplete = (numbers) => {
     setTransactions([]);
     setAtmRemaining(0);
     setBanks([]);
     setManualMode(true);
+    if (numbers) {
+      setIncome(numbers.income);
+      setBudget(numbers.budget);
+    }
     setOnboardingDone(true);
+    setActiveView('dashboard');
   };
 
   const handleLinkBankFromSettings = () => {
-    setLinkingMode(true);
-    setOnboardingDone(false);
-  };
-
-  const handleLinkBankComplete = (selectedBanks) => {
-    setBanks(prev => [...prev, ...selectedBanks]);
-    setLinkingMode(false);
-    setOnboardingDone(true);
-    setActiveView('settings');
-    showToast('Bank connected', 'success');
+    setOnboardingDone(false); // re-run onboarding to connect
   };
 
   // Transaction handlers
@@ -390,14 +364,16 @@ function App() {
   // View content
   const renderView = () => {
     if (!landingDone) {
-      if (authScreen === 'login' || authScreen === 'signup') {
-        const isSignup = authScreen === 'signup';
+      if (authScreen === 'login') {
         return (
           <LoginPage
-            mode={authScreen}
+            mode="login"
             onBack={() => setAuthScreen('landing')}
-            onSuccess={isSignup ? handleSignupSuccess : handleLogin}
-            onSwitch={() => setAuthScreen(isSignup ? 'login' : 'signup')}
+            onSuccess={handleLogin}
+            onSwitch={() => {
+              setAuthScreen('landing');
+              handleSignup();
+            }}
           />
         );
       }
@@ -405,15 +381,7 @@ function App() {
     }
 
     if (!onboardingDone) {
-      return (
-        <OnboardingShell
-          onBankConnected={handleBankConnected}
-          onManualMode={handleManualMode}
-          onLinkBank={handleLinkBankFromSettings}
-          linkingMode={linkingMode}
-          onLinkBankComplete={handleLinkBankComplete}
-        />
-      );
+      return <OnboardingShell onComplete={handleOnboardingComplete} />;
     }
 
     switch (activeView) {
