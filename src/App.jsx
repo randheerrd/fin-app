@@ -43,7 +43,7 @@ function App() {
 
   // UI state
   const [activeView, setActiveView] = useState('dashboard');
-  const [activeFilter, setActiveFilter] = useState(null);
+  const [activeFilter] = useState(null);
   const [sipDismissed, setSipDismissed] = useState(false);
 
   // Modal state
