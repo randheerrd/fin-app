@@ -14,8 +14,8 @@ export default function StepGoalSetup({ onAction }) {
 
   return (
     <div>
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-[#111827] mb-2">Two numbers to Start</h1>
+      <div className="text-center mb-8">
+        <h1 className="font-display text-4xl text-[#111827] mb-2">Two numbers to Start</h1>
         <p className="text-[#6b7280] text-sm">These anchor your dashboard , you can change them anytime in settings</p>
       </div>
 
@@ -27,7 +27,7 @@ export default function StepGoalSetup({ onAction }) {
             placeholder="1,00,000"
             value={income}
             onChange={(e) => setIncome(e.target.value.replace(/[^\d,]/g, ''))}
-            className="w-full px-4 py-2.5 border border-[#e5e7eb] rounded-lg text-[#111827] text-sm placeholder-[#9ca3af] focus:border-[#1B3A2F] focus:ring-1 focus:ring-[#1B3A2F]/20 transition-colors"
+            className="w-full px-4 py-2.5 border border-[#e5e7eb] rounded-lg text-[#111827] text-sm placeholder-[#9ca3af] focus:border-[#0E3F2E] focus:ring-1 focus:ring-[#0E3F2E]/20 transition-colors"
           />
         </div>
 
@@ -38,7 +38,7 @@ export default function StepGoalSetup({ onAction }) {
             placeholder="50,000"
             value={budget}
             onChange={(e) => setBudget(e.target.value.replace(/[^\d,]/g, ''))}
-            className="w-full px-4 py-2.5 border border-[#e5e7eb] rounded-lg text-[#111827] text-sm placeholder-[#9ca3af] focus:border-[#1B3A2F] focus:ring-1 focus:ring-[#1B3A2F]/20 transition-colors"
+            className="w-full px-4 py-2.5 border border-[#e5e7eb] rounded-lg text-[#111827] text-sm placeholder-[#9ca3af] focus:border-[#0E3F2E] focus:ring-1 focus:ring-[#0E3F2E]/20 transition-colors"
           />
         </div>
       </div>
@@ -53,7 +53,7 @@ export default function StepGoalSetup({ onAction }) {
         </button>
         <button
           onClick={handleContinue}
-          className="flex items-center gap-2 px-5 py-2.5 bg-[#1B3A2F] text-white text-sm font-medium rounded-lg hover:bg-[#142D24] transition-colors"
+          className="flex items-center gap-2 px-5 py-2.5 bg-[#0E3F2E] text-white text-sm font-medium rounded-lg hover:bg-[#0a3122] transition-colors"
         >
           Continue
           <ArrowRight size={16} />

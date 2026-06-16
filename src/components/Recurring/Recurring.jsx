@@ -3,7 +3,7 @@ import { Link } from 'lucide-react';
 export default function Recurring({ recurring, income, manualMode, onLinkBank }) {
   if (manualMode && recurring.length === 0) {
     return (
-      <div className="min-h-screen bg-white px-8 py-7">
+      <div className="min-h-full bg-white px-8 py-7">
         <p className="text-2xl font-bold text-[#111827] mb-6">Recurring</p>
         <div className="border border-[#f3f4f6] rounded-xl p-12 text-center">
           <p className="text-[#9ca3af] text-sm mb-5">
@@ -11,7 +11,7 @@ export default function Recurring({ recurring, income, manualMode, onLinkBank })
           </p>
           <button
             onClick={onLinkBank}
-            className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#1B3A2F] text-white text-sm font-medium rounded-lg hover:bg-[#142D24] transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#0E3F2E] text-white text-sm font-medium rounded-lg hover:bg-[#0a3122] transition-colors"
           >
             <Link size={16} />
             Link a bank
@@ -25,7 +25,7 @@ export default function Recurring({ recurring, income, manualMode, onLinkBank })
   const pct = Math.round((totalRecurring / income) * 100);
 
   return (
-    <div className="min-h-screen bg-white px-8 py-7">
+    <div className="min-h-full bg-white px-8 py-7">
       <p className="text-2xl font-bold text-[#111827] mb-6">Recurring</p>
 
       <div className="border border-[#f3f4f6] rounded-xl p-5 mb-5">

@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { ArrowLeft } from 'lucide-react';
+import { Pencil } from 'lucide-react';
 import accountAggregatorAPI from '../../lib/api';
 
 export default function StepOTP({ mobile, consentId, onSubmit, onChangeNumber }) {
@@ -48,52 +48,44 @@ export default function StepOTP({ mobile, consentId, onSubmit, onChangeNumber })
     }
   };
 
-  const otpString = otp.join('');
-
   return (
     <div>
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-[#111827] mb-2">Enter the code</h1>
-        <p className="text-[#6b7280] text-sm">We sent a 6-digit code to +91{mobile}</p>
+      <div className="text-center mb-8">
+        <h1 className="font-display text-4xl text-[#111827] mb-2">Enter the code</h1>
+        <p className="text-[#6b7280] text-sm flex items-center justify-center gap-1.5">
+          We sent a 6-digit code to +91{mobile}
+          <button
+            onClick={onChangeNumber}
+            className="inline-flex items-center gap-1 text-[#0E3F2E] font-medium hover:underline"
+          >
+            <Pencil size={13} />
+            Edit
+          </button>
+        </p>
       </div>
 
-      <div className="flex gap-3 justify-center mb-8">
-        {[0, 1, 2, 3, 4, 5].map(i => (
-          <input
-            key={i}
-            ref={inputRefs[i]}
-            autoFocus={i === 0}
-            type="text"
-            maxLength="1"
-            inputMode="numeric"
-            value={otp[i]}
-            onChange={(e) => handleChange(i, e.target.value)}
-            onKeyDown={(e) => handleKeyDown(i, e)}
-            disabled={loading}
-            className="w-12 h-12 text-xl text-center border border-[#e5e7eb] rounded-lg text-[#111827] outline-none focus:border-[#1B3A2F] focus:ring-1 focus:ring-[#1B3A2F]/20 transition-colors disabled:opacity-50"
-          />
+      <div className="flex gap-2.5 justify-center items-center mb-6">
+        {[0, 1, 2, 3, 4, 5].map((i) => (
+          <div key={i} className="flex items-center gap-2.5">
+            {i === 3 && <span className="text-[#9ca3af] font-bold">·</span>}
+            <input
+              ref={inputRefs[i]}
+              autoFocus={i === 0}
+              type="text"
+              maxLength="1"
+              inputMode="numeric"
+              value={otp[i]}
+              onChange={(e) => handleChange(i, e.target.value)}
+              onKeyDown={(e) => handleKeyDown(i, e)}
+              disabled={loading}
+              className="w-12 h-14 text-xl text-center border border-[#e5e7eb] rounded-lg text-[#111827] outline-none focus:border-[#0E3F2E] focus:ring-1 focus:ring-[#0E3F2E]/20 transition-colors disabled:opacity-50"
+            />
+          </div>
         ))}
       </div>
 
-      {error && <p className="text-red-500 text-xs text-center mb-4">{error}</p>}
-
-      <div className="flex items-center justify-between">
-        <button
-          onClick={onChangeNumber}
-          disabled={loading}
-          className="flex items-center gap-1.5 text-sm text-[#6b7280] hover:text-[#111827] transition-colors disabled:opacity-50"
-        >
-          <ArrowLeft size={16} />
-          Back
-        </button>
-        <button
-          onClick={() => handleSubmit(otpString)}
-          disabled={otpString.length !== 6 || loading}
-          className="px-5 py-2.5 bg-[#1B3A2F] text-white text-sm font-medium rounded-lg hover:bg-[#142D24] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-        >
-          {loading ? 'Verifying...' : 'Verify'}
-        </button>
-      </div>
+      {loading && <p className="text-[#9ca3af] text-xs text-center">Verifying…</p>}
+      {error && <p className="text-red-500 text-xs text-center">{error}</p>}
     </div>
   );
 }

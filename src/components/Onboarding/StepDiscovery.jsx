@@ -51,7 +51,7 @@ export default function StepDiscovery({ mobile, token, onComplete }) {
 
   return (
     <div className="py-8 text-center">
-      <div className="w-10 h-10 border-2 border-[#e5e7eb] border-t-[#1B3A2F] rounded-full animate-spin mx-auto mb-6" />
+      <div className="w-10 h-10 border-2 border-[#e5e7eb] border-t-[#0E3F2E] rounded-full animate-spin mx-auto mb-6" />
       <p className="text-[#6b7280] text-sm">{message}</p>
     </div>
   );

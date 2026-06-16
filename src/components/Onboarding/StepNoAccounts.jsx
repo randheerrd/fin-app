@@ -7,7 +7,7 @@ export default function StepNoAccounts({ onTryAgain, onManual }) {
         <AlertCircle className="text-amber-500" size={22} />
       </div>
 
-      <h1 className="text-2xl font-bold text-[#111827] mb-2">No accounts found</h1>
+      <h1 className="font-display text-4xl text-[#111827] mb-2">No accounts found</h1>
       <p className="text-[#6b7280] text-sm mb-8">
         We didn't find any accounts linked to this number. Try a different number or add expenses manually.
       </p>
@@ -15,7 +15,7 @@ export default function StepNoAccounts({ onTryAgain, onManual }) {
       <div className="space-y-3">
         <button
           onClick={onTryAgain}
-          className="w-full py-2.5 bg-[#1B3A2F] text-white text-sm font-medium rounded-lg hover:bg-[#142D24] transition-colors"
+          className="w-full py-2.5 bg-[#0E3F2E] text-white text-sm font-medium rounded-lg hover:bg-[#0a3122] transition-colors"
         >
           Try another number
         </button>

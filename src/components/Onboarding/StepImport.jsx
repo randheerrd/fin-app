@@ -35,7 +35,7 @@ export default function StepImport({ onComplete }) {
       <div className="space-y-4">
         <div className="w-full bg-[#f3f4f6] rounded-full h-1.5 overflow-hidden">
           <div
-            className="h-full bg-[#1B3A2F] transition-all duration-500 rounded-full"
+            className="h-full bg-[#0E3F2E] transition-all duration-500 rounded-full"
             style={{ width: `${progress}%` }}
           />
         </div>

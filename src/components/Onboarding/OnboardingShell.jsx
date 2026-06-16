@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { Play } from 'lucide-react';
+import FinAppLogo from '../FinAppLogo';
 import StepPathChoice from './StepPathChoice';
 import StepTrackSetup from './StepTrackSetup';
 import StepGoalSetup from './StepGoalSetup';
@@ -36,7 +38,6 @@ export default function OnboardingShell({
   const [token, setToken] = useState('');
   const [income, setIncome] = useState(100000);
   const [budget, setBudget] = useState(50000);
-  const [otp, setOtp] = useState('');
   const [foundAccounts, setFoundAccounts] = useState([]);
   const [selectedAccounts, setSelectedAccounts] = useState([]);
 
@@ -84,7 +85,6 @@ export default function OnboardingShell({
   };
 
   const handleOTPSubmit = (otpCode, verificationToken) => {
-    setOtp(otpCode);
     setToken(verificationToken);
     setStep('discovery');
   };
@@ -93,7 +93,6 @@ export default function OnboardingShell({
     setMobile('');
     setConsentId('');
     setToken('');
-    setOtp('');
     setStep('mobile');
   };
 
@@ -112,7 +111,6 @@ export default function OnboardingShell({
     setMobile('');
     setConsentId('');
     setToken('');
-    setOtp('');
     setStep('mobile');
   };
 
@@ -136,7 +134,6 @@ export default function OnboardingShell({
     setMobile('');
     setConsentId('');
     setToken('');
-    setOtp('');
     setStep('mobile');
   };
 
@@ -160,93 +157,80 @@ export default function OnboardingShell({
     if (linkingMode) {
       onLinkBankComplete(bankData);
     } else {
-      onBankConnected(bankData);
+      onBankConnected(bankData, { income, budget });
     }
   };
 
+  const isLoader = step === 'discovery' || step === 'import';
+  const showDots = !linkingMode && !isLoader;
+  // Consent is presented as a modal over the account-select screen.
+  const baseStep = step === 'consent' ? 'account-select' : step;
+
   return (
-    <div className="w-full h-screen flex flex-col bg-white">
-      {/* Top navbar */}
-      <header className="h-12 bg-[#1B3A2F] flex items-center px-6 flex-shrink-0">
-        <div className="flex items-center gap-2">
-          <div className="w-5 h-5 flex flex-col justify-center gap-1 flex-shrink-0">
-            <span className="block w-full h-0.5 bg-white rounded" />
-            <span className="block w-3/4 h-0.5 bg-white rounded" />
-            <span className="block w-full h-0.5 bg-white rounded" />
-          </div>
-          <span className="text-white font-semibold text-base">FinApp</span>
-        </div>
+    <div className="w-full h-screen flex flex-col bg-[#0E3F2E] p-2.5 relative">
+      {/* Logo on the green frame */}
+      <header className="h-14 flex items-center px-5 flex-shrink-0">
+        <FinAppLogo color="#ffffff" className="h-6 w-auto" />
       </header>
 
-      {/* Content area */}
-      <div className="flex-1 bg-[#f9fafb] overflow-auto">
-        <div className="w-full h-full flex items-center justify-center py-12 px-4">
-          <div className="w-full max-w-2xl bg-white border border-[#e5e7eb] rounded-xl shadow-sm">
-            {/* Progress dots */}
-            {!linkingMode && step !== 'import' && step !== 'discovery' && (
-              <div className="flex justify-center gap-3 pt-10 pb-2">
-                {[1, 2, 3, 4, 5].map(i => (
-                  <div
-                    key={i}
-                    className={`w-3 h-3 rounded-full transition-colors ${
-                      i <= activeDot ? 'bg-[#1B3A2F]' : 'bg-[#d1d5db]'
-                    }`}
-                  />
-                ))}
-              </div>
-            )}
-
-            <div className="px-12 pb-12 pt-8">
-              {step === 'path' && <StepPathChoice onChoose={handlePathChoice} />}
-              {step === 'track-setup' && <StepTrackSetup onAction={handleTrackSetup} />}
-              {step === 'goal-setup' && <StepGoalSetup onAction={handleGoalSetup} />}
-              {step === 'mobile' && (
-                <StepMobileEntry
-                  onSubmit={handleMobileSubmit}
-                  onBack={linkingMode ? null : handleMobileBack}
+      {/* White rounded panel floating on the green background */}
+      <div className="flex-1 bg-white rounded-3xl overflow-auto relative">
+        <div className="w-full min-h-full flex flex-col items-center px-4 pt-24 pb-16">
+          {showDots && (
+            <div className="flex justify-center gap-2.5 mb-12">
+              {[1, 2, 3, 4, 5].map((i) => (
+                <div
+                  key={i}
+                  className={`w-2.5 h-2.5 rounded-full transition-colors ${
+                    i <= activeDot ? 'bg-[#0E3F2E]' : 'bg-[#d1d5db]'
+                  }`}
                 />
-              )}
-              {step === 'otp' && (
-                <StepOTP
-                  mobile={mobile}
-                  consentId={consentId}
-                  onSubmit={handleOTPSubmit}
-                  onChangeNumber={handleOTPChangeNumber}
-                />
-              )}
-              {step === 'discovery' && (
-                <StepDiscovery
-                  mobile={mobile}
-                  token={token}
-                  onComplete={handleDiscoveryComplete}
-                />
-              )}
-              {step === 'no-accounts' && (
-                <StepNoAccounts
-                  onTryAgain={handleNoAccountsTryAgain}
-                  onManual={handleNoAccountsManual}
-                />
-              )}
-              {step === 'account-select' && (
-                <StepAccountSelect
-                  accounts={foundAccounts}
-                  selected={selectedAccounts}
-                  onToggle={handleAccountSelect}
-                  onContinue={handleAccountContinue}
-                  onBack={handleAccountBack}
-                />
-              )}
-              {step === 'consent' && (
-                <StepConsent
-                  onAccept={handleConsentAccept}
-                  onBack={handleConsentBack}
-                />
-              )}
-              {step === 'import' && <StepImport onComplete={handleImportComplete} />}
+              ))}
             </div>
+          )}
+
+          <div className="w-full max-w-lg">
+            {baseStep === 'path' && <StepPathChoice onChoose={handlePathChoice} />}
+            {baseStep === 'track-setup' && <StepTrackSetup onAction={handleTrackSetup} />}
+            {baseStep === 'goal-setup' && <StepGoalSetup onAction={handleGoalSetup} />}
+            {baseStep === 'mobile' && (
+              <StepMobileEntry onSubmit={handleMobileSubmit} onBack={linkingMode ? null : handleMobileBack} />
+            )}
+            {baseStep === 'otp' && (
+              <StepOTP
+                mobile={mobile}
+                consentId={consentId}
+                onSubmit={handleOTPSubmit}
+                onChangeNumber={handleOTPChangeNumber}
+              />
+            )}
+            {baseStep === 'discovery' && (
+              <StepDiscovery mobile={mobile} token={token} onComplete={handleDiscoveryComplete} />
+            )}
+            {baseStep === 'import' && <StepImport onComplete={handleImportComplete} />}
+            {baseStep === 'no-accounts' && (
+              <StepNoAccounts onTryAgain={handleNoAccountsTryAgain} onManual={handleNoAccountsManual} />
+            )}
+            {baseStep === 'account-select' && (
+              <StepAccountSelect
+                accounts={foundAccounts}
+                selected={selectedAccounts}
+                onToggle={handleAccountSelect}
+                onContinue={handleAccountContinue}
+                onBack={handleAccountBack}
+              />
+            )}
           </div>
         </div>
       </div>
+
+      {/* Consent modal */}
+      {step === 'consent' && <StepConsent onAccept={handleConsentAccept} onBack={handleConsentBack} />}
+
+      {/* Demo play FAB */}
+      <button className="absolute bottom-6 right-6 w-11 h-11 rounded-full bg-white border border-[#d1d5db] shadow-sm flex items-center justify-center text-[#0E3F2E] hover:bg-[#f9fafb] transition-colors">
+        <Play size={16} className="ml-0.5" fill="currentColor" />
+      </button>
     </div>
   );
 }

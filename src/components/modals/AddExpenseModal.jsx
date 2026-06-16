@@ -44,7 +44,7 @@ export default function AddExpenseModal({ onClose, onSave }) {
                 placeholder="0"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
-                className="w-full text-4xl font-bold text-[#1B3A2F] outline-none placeholder-[#d1d5db]"
+                className="w-full text-4xl font-bold text-[#0E3F2E] outline-none placeholder-[#d1d5db]"
               />
               <p className="text-[#9ca3af] text-xs mt-1">Amount in rupees</p>
             </div>
@@ -58,12 +58,12 @@ export default function AddExpenseModal({ onClose, onSave }) {
                     onClick={() => setCategory(cat.id)}
                     className={`p-2.5 rounded-lg border transition-all text-center ${
                       category === cat.id
-                        ? 'border-[#1B3A2F] bg-[#1B3A2F]/5'
+                        ? 'border-[#0E3F2E] bg-[#0E3F2E]/5'
                         : 'border-[#f3f4f6] hover:border-[#e5e7eb] bg-[#f9fafb]'
                     }`}
                   >
                     <div className="text-xl mb-0.5">{cat.emoji}</div>
-                    <div className={`text-[10px] font-medium leading-tight ${category === cat.id ? 'text-[#1B3A2F]' : 'text-[#9ca3af]'}`}>
+                    <div className={`text-[10px] font-medium leading-tight ${category === cat.id ? 'text-[#0E3F2E]' : 'text-[#9ca3af]'}`}>
                       {cat.name.split(' ')[0]}
                     </div>
                   </button>
@@ -79,7 +79,7 @@ export default function AddExpenseModal({ onClose, onSave }) {
                   value={date}
                   onChange={(e) => setDate(e.target.value)}
                   max={getToday()}
-                  className="w-full border border-[#e5e7eb] rounded-lg px-3 py-2 text-[#111827] text-sm outline-none focus:border-[#1B3A2F]"
+                  className="w-full border border-[#e5e7eb] rounded-lg px-3 py-2 text-[#111827] text-sm outline-none focus:border-[#0E3F2E]"
                 />
               </div>
               <div>
@@ -89,7 +89,7 @@ export default function AddExpenseModal({ onClose, onSave }) {
                   placeholder="Details"
                   value={note}
                   onChange={(e) => setNote(e.target.value)}
-                  className="w-full border border-[#e5e7eb] rounded-lg px-3 py-2 text-[#111827] text-sm outline-none focus:border-[#1B3A2F] placeholder-[#d1d5db]"
+                  className="w-full border border-[#e5e7eb] rounded-lg px-3 py-2 text-[#111827] text-sm outline-none focus:border-[#0E3F2E] placeholder-[#d1d5db]"
                 />
               </div>
             </div>
@@ -104,7 +104,7 @@ export default function AddExpenseModal({ onClose, onSave }) {
             <button
               onClick={handleSave}
               disabled={!amount || parseFloat(amount) <= 0}
-              className="flex-1 py-2.5 bg-[#1B3A2F] text-white text-sm font-semibold rounded-lg hover:bg-[#142D24] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              className="flex-1 py-2.5 bg-[#0E3F2E] text-white text-sm font-semibold rounded-lg hover:bg-[#0a3122] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
             >
               Save
             </button>

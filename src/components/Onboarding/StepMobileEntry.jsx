@@ -29,8 +29,8 @@ export default function StepMobileEntry({ onSubmit, onBack }) {
 
   return (
     <div>
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-[#111827] mb-2">Connect your bank</h1>
+      <div className="text-center mb-8">
+        <h1 className="font-display text-4xl text-[#111827] mb-2">Connect your bank</h1>
         <p className="text-[#6b7280] text-sm">
           The Account Aggregator finds your accounts by your registered mobile number,
           no hunting through a list of 50 banks.
@@ -39,7 +39,7 @@ export default function StepMobileEntry({ onSubmit, onBack }) {
 
       <div className="mb-6">
         <label className="block text-sm font-medium text-[#374151] mb-1.5">Mobile No.</label>
-        <div className="flex items-center border border-[#e5e7eb] rounded-lg overflow-hidden focus-within:border-[#1B3A2F] focus-within:ring-1 focus-within:ring-[#1B3A2F]/20 transition-colors">
+        <div className="flex items-center border border-[#e5e7eb] rounded-lg overflow-hidden focus-within:border-[#0E3F2E] focus-within:ring-1 focus-within:ring-[#0E3F2E]/20 transition-colors">
           <span className="pl-4 pr-2 py-2.5 text-[#6b7280] text-sm select-none">+91</span>
           <input
             autoFocus
@@ -74,7 +74,7 @@ export default function StepMobileEntry({ onSubmit, onBack }) {
         <button
           onClick={handleSubmit}
           disabled={mobile.length !== 10 || loading}
-          className="flex items-center gap-2 px-5 py-2.5 bg-[#1B3A2F] text-white text-sm font-medium rounded-lg hover:bg-[#142D24] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          className="flex items-center gap-2 px-5 py-2.5 bg-[#0E3F2E] text-white text-sm font-medium rounded-lg hover:bg-[#0a3122] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
         >
           {loading ? 'Connecting...' : 'Find my account'}
           {!loading && <ArrowRight size={16} />}

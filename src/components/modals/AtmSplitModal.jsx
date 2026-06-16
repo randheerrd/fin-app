@@ -31,7 +31,7 @@ export default function AtmSplitModal({ atmRemaining, onClose, onAddSplit }) {
         <div className="px-6 py-5 space-y-4">
           <div>
             <label className="block text-xs font-medium text-[#6b7280] mb-1.5">Amount</label>
-            <div className="flex items-center border border-[#e5e7eb] rounded-lg overflow-hidden focus-within:border-[#1B3A2F]">
+            <div className="flex items-center border border-[#e5e7eb] rounded-lg overflow-hidden focus-within:border-[#0E3F2E]">
               <span className="pl-4 text-[#9ca3af] text-sm">₹</span>
               <input
                 autoFocus
@@ -55,7 +55,7 @@ export default function AtmSplitModal({ atmRemaining, onClose, onAddSplit }) {
               placeholder="e.g., Groceries, Dinner…"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="w-full px-4 py-2.5 border border-[#e5e7eb] rounded-lg text-sm text-[#111827] outline-none focus:border-[#1B3A2F] placeholder-[#d1d5db]"
+              className="w-full px-4 py-2.5 border border-[#e5e7eb] rounded-lg text-sm text-[#111827] outline-none focus:border-[#0E3F2E] placeholder-[#d1d5db]"
             />
           </div>
         </div>
@@ -70,7 +70,7 @@ export default function AtmSplitModal({ atmRemaining, onClose, onAddSplit }) {
           <button
             onClick={handleAddSplit}
             disabled={!amount || parseFloat(amount) <= 0 || parseFloat(amount) > atmRemaining}
-            className="flex-1 py-2.5 bg-[#1B3A2F] text-white text-sm font-medium rounded-lg hover:bg-[#142D24] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            className="flex-1 py-2.5 bg-[#0E3F2E] text-white text-sm font-medium rounded-lg hover:bg-[#0a3122] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
             Add & continue
           </button>

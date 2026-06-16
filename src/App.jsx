@@ -70,13 +70,33 @@ function App() {
   }, []);
 
   // Onboarding handlers
-  const handleBankConnected = (selectedBanks) => {
+  const handleBankConnected = (selectedBanks, numbers) => {
     const enrichedTransactions = enrichTransactionsWithIds(BANK_TRANSACTIONS);
     setTransactions(enrichedTransactions);
     setAtmRemaining(4880); // 5000 - 120 already accounted
     setBanks(selectedBanks);
     setRecurring(INITIAL_RECURRING);
+    if (numbers) {
+      setIncome(numbers.income);
+      setBudget(numbers.budget);
+    }
     setOnboardingDone(true);
+  };
+
+  // Landing → signup enters onboarding; login is treated as a returning user
+  // (seed their connected accounts and drop them straight on the dashboard).
+  const DEFAULT_BANKS = [
+    { name: 'HDFC Bank', type: 'Salary account', mask: '··4521', synced: 'just now' },
+    { name: 'Axis Bank', type: 'Saving account', mask: '··8834', synced: 'just now' },
+    { name: 'ICICI Bank', type: 'Saving account', mask: '··2291', synced: 'just now' },
+  ];
+
+  const handleSignup = () => setLandingDone(true);
+
+  const handleLogin = () => {
+    handleBankConnected(DEFAULT_BANKS);
+    setLandingDone(true);
+    setActiveView('dashboard');
   };
 
   const handleManualMode = () => {
@@ -181,7 +201,7 @@ function App() {
   // View content
   const renderView = () => {
     if (!landingDone) {
-      return <Landing onStart={() => setLandingDone(true)} />;
+      return <Landing onSignup={handleSignup} onLogin={handleLogin} />;
     }
 
     if (!onboardingDone) {
@@ -294,7 +314,7 @@ function App() {
   };
 
   return (
-    <div className="flex h-screen bg-bg-primary overflow-hidden">
+    <div className={`flex h-screen overflow-hidden ${onboardingDone ? 'bg-[#0E3F2E]' : 'bg-white'}`}>
       {/* Sidebar */}
       {onboardingDone && (
         <Sidebar
@@ -305,10 +325,18 @@ function App() {
         />
       )}
 
-      {/* Main content */}
-      <div ref={mainContentRef} className={`flex-1 overflow-auto transition-all ${onboardingDone ? 'ml-56' : ''}`}>
-        {renderView()}
-      </div>
+      {/* Main content — in-app sits in a rounded white surface with a 4px green frame */}
+      {onboardingDone ? (
+        <div className="flex-1 ml-56 overflow-hidden p-1">
+          <div ref={mainContentRef} className="h-full overflow-auto bg-white rounded-2xl">
+            {renderView()}
+          </div>
+        </div>
+      ) : (
+        <div ref={mainContentRef} className="flex-1 overflow-auto">
+          {renderView()}
+        </div>
+      )}
 
       {/* Modals */}
       {showAddExpense && (

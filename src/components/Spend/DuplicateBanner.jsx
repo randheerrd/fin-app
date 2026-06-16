@@ -1,26 +1,26 @@
-import { AlertCircle } from 'lucide-react';
-
 export default function DuplicateBanner({ transaction, onMerge, onKeepBoth }) {
   return (
-    <tr className="bg-amber-50/80">
-      <td colSpan="5" className="px-5 py-3 border-b border-amber-100">
-        <div className="flex items-start gap-2.5">
-          <AlertCircle size={15} className="text-amber-500 mt-0.5 flex-shrink-0" />
-          <div className="flex-1">
-            <p className="text-xs font-medium text-amber-700">
-              Looks like a duplicate. You added "{transaction.merchant}", then HDFC imported the same payment.
-            </p>
-            <div className="flex gap-4 mt-2">
-              <button onClick={onMerge} className="text-xs text-amber-600 hover:underline">
-                Merge (keep one)
-              </button>
-              <button onClick={onKeepBoth} className="text-xs text-amber-600 hover:underline">
-                Keep both
-              </button>
-            </div>
-          </div>
-        </div>
-      </td>
-    </tr>
+    <div className="flex items-center justify-between gap-4 bg-[#FBF7EF] border border-[#F3EAD8] rounded-xl px-5 py-4 mb-5">
+      <div>
+        <p className="text-sm font-semibold text-[#111827]">Looks like a duplicate.</p>
+        <p className="text-sm text-[#9ca3af] mt-0.5">
+          You added "{transaction.merchant}", then HDFC imported the same payment.
+        </p>
+      </div>
+      <div className="flex items-center gap-2 flex-shrink-0">
+        <button
+          onClick={onMerge}
+          className="px-4 py-2 bg-white border border-[#e5e7eb] text-sm font-medium text-[#374151] rounded-lg hover:bg-[#f9fafb] transition-colors"
+        >
+          Merge Them
+        </button>
+        <button
+          onClick={onKeepBoth}
+          className="px-4 py-2 bg-white border border-[#e5e7eb] text-sm font-medium text-[#374151] rounded-lg hover:bg-[#f9fafb] transition-colors"
+        >
+          Keep Both
+        </button>
+      </div>
+    </div>
   );
 }
