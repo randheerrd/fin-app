@@ -12,6 +12,7 @@ export default function OnboardingShell({ onComplete }) {
   const [path, setPath] = useState(null);
   const [income, setIncome] = useState(100000);
   const [budget, setBudget] = useState(50000);
+  const [goal, setGoal] = useState(null);
 
   const activeDot = STEP_TO_DOT[step] || 1;
 
@@ -32,7 +33,16 @@ export default function OnboardingShell({ onComplete }) {
     }
   };
 
-  const handleVerified = () => onComplete({ income, budget });
+  const handleGoal = (action, data) => {
+    if (action === 'continue') {
+      setGoal(data.goal);
+      setStep('verify');
+    } else {
+      setStep('path'); // "Back"
+    }
+  };
+
+  const handleVerified = () => onComplete({ income, budget, goal });
   const backToNumbers = () => setStep(path === 'goal' ? 'goal-setup' : 'track-setup');
 
   return (
@@ -58,7 +68,7 @@ export default function OnboardingShell({ onComplete }) {
             <div className="w-full max-w-lg">
               {step === 'path' && <StepPathChoice onChoose={handlePathChoice} />}
               {step === 'track-setup' && <StepTrackSetup onAction={handleNumbers} />}
-              {step === 'goal-setup' && <StepGoalSetup onAction={handleNumbers} />}
+              {step === 'goal-setup' && <StepGoalSetup onAction={handleGoal} />}
               {step === 'verify' && <StepVerify onVerified={handleVerified} onBack={backToNumbers} />}
             </div>
           </div>

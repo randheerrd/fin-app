@@ -242,15 +242,14 @@ function App() {
 
   // Onboarding finished (after phone verification). No bank yet — manual mode;
   // bank linking happens later from Settings.
-  const handleOnboardingComplete = (numbers) => {
+  const handleOnboardingComplete = ({ income: inc, budget: bud, goal } = {}) => {
     setTransactions([]);
     setAtmRemaining(0);
     setBanks([]);
     setManualMode(true);
-    if (numbers) {
-      setIncome(numbers.income);
-      setBudget(numbers.budget);
-    }
+    if (inc) setIncome(inc);
+    if (bud) setBudget(bud);
+    setGoals(goal ? [{ id: crypto.randomUUID(), ...goal, isNew: true, detected: false }] : []);
     setOnboardingDone(true);
     setActiveView('dashboard');
   };
