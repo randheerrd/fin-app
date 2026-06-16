@@ -56,10 +56,10 @@ export default function Settings({
     city: '',
   });
   const [editingProfile, setEditingProfile] = useState(false);
-  const [draft, setDraft] = useState({ ...profile, income: String(income), budget: String(budget) });
+  const [draft, setDraft] = useState({ ...profile, income: income > 0 ? String(income) : '', budget: budget > 0 ? String(budget) : '' });
 
   const startEdit = () => {
-    setDraft({ ...profile, income: String(income), budget: String(budget) });
+    setDraft({ ...profile, income: income > 0 ? String(income) : '', budget: budget > 0 ? String(budget) : '' });
     setEditingProfile(true);
   };
   const saveProfile = () => {
@@ -139,8 +139,8 @@ export default function Settings({
                     { label: 'Email Address', value: profile.email || '—' },
                     { label: 'Mobile No', value: profile.mobile || '—' },
                     { label: 'City', value: profile.city || '—' },
-                    { label: 'Monthly Income', value: `₹${income.toLocaleString('en-IN')}` },
-                    { label: 'Monthly Budget', value: `₹${budget.toLocaleString('en-IN')}` },
+                    { label: 'Monthly Income', value: income > 0 ? `₹${income.toLocaleString('en-IN')}` : '—' },
+                    { label: 'Monthly Budget', value: budget > 0 ? `₹${budget.toLocaleString('en-IN')}` : '—' },
                   ].map((f) => (
                     <div key={f.label}>
                       <p className="text-xs text-[#9ca3af] mb-1">{f.label}</p>

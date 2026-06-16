@@ -7,8 +7,8 @@ export default function StepTrackSetup({ onAction }) {
 
   const handleContinue = () => {
     onAction('continue', {
-      income: parseInt(income.replace(/,/g, '')) || 100000,
-      budget: parseInt(budget.replace(/,/g, '')) || 50000,
+      income: parseInt(income.replace(/,/g, '')) || 0, // 0 = left blank → prompt later
+      budget: parseInt(budget.replace(/,/g, '')) || 0,
     });
   };
 

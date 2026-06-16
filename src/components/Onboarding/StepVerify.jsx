@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react';
 import { ArrowLeft, Lock, Pencil } from 'lucide-react';
 import { firebaseEnabled, sendOtp, confirmOtp, resetRecaptcha } from '../../lib/firebase';
+import { isDemoPhone, demoCode } from '../../data/demoSeed';
 
 const RECAPTCHA_ID = 'verify-recaptcha';
 
@@ -18,7 +19,8 @@ export default function StepVerify({ onVerified, onBack }) {
   const sendCode = async () => {
     if (phone.length !== 10) return;
     setError('');
-    if (!firebaseEnabled) {
+    // Demo accounts (and local demo mode) skip Firebase + reCAPTCHA entirely.
+    if (!firebaseEnabled || isDemoPhone(phone)) {
       setStage('otp');
       return;
     }
@@ -37,6 +39,11 @@ export default function StepVerify({ onVerified, onBack }) {
 
   const verify = async (code) => {
     setError('');
+    if (isDemoPhone(phone)) {
+      if (code === demoCode(phone)) onVerified(phone);
+      else setError('Invalid code. Please try again.');
+      return;
+    }
     if (!firebaseEnabled) {
       onVerified(phone);
       return;

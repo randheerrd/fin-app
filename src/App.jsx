@@ -19,12 +19,20 @@ import { getToday } from './lib/utils';
 import { firebaseEnabled, logout } from './lib/firebase';
 import { onUser, loadUserData, saveUserData } from './lib/userData';
 import { aaEnabled, waitForConsent, createSession, waitForData, mapTransactions } from './lib/setu';
-import { DEMO_PHONE, FRESH_DEMO_PHONE, generateDemoTransactions, DEMO_BANKS, DEMO_GOALS } from './data/demoSeed';
+import {
+  FRESH_DEMO_PHONE,
+  isDemoPhone,
+  generateDemoTransactions,
+  DEMO_BANKS,
+  DEMO_GOALS,
+} from './data/demoSeed';
 
 function App() {
-  // Core state
-  const [income, setIncome] = useState(75000);
-  const [budget, setBudget] = useState(45000);
+  // Core state — 0 means "not set yet" so the dashboard shows the empty/prompt
+  // state until the user actually enters income/budget (or a demo/real account
+  // hydrates real values).
+  const [income, setIncome] = useState(0);
+  const [budget, setBudget] = useState(0);
   const [transactions, setTransactions] = useState([]);
   const [goals, setGoals] = useState([]);
   const [banks, setBanks] = useState([]);
@@ -94,31 +102,21 @@ function App() {
   useEffect(() => onUser(setFirebaseUser), []);
 
   // When a real user signs in, hydrate their saved data from Firestore.
+  // (Demo accounts bypass Firebase — they're seeded in handleLogin.)
   useEffect(() => {
     if (!firebaseEnabled || !firebaseUser) return;
     let cancelled = false;
     loadUserData(firebaseUser.uid).then((data) => {
       if (cancelled) return;
-      const phone = firebaseUser.phoneNumber || '';
       if (data && (data.transactions?.length || data.onboardingDone)) {
-        setIncome(data.income ?? 75000);
-        setBudget(data.budget ?? 45000);
+        setIncome(data.income ?? 0);
+        setBudget(data.budget ?? 0);
         setTransactions(data.transactions ?? []);
         setGoals(data.goals ?? []);
         setBanks(data.banks ?? []);
         setRecurring(data.recurring ?? []);
         setAtmRemaining(data.atmRemaining ?? 0);
         setManualMode(!!data.manualMode);
-        setLandingDone(true);
-        setOnboardingDone(true);
-        setActiveView('dashboard');
-      } else if (phone.includes(DEMO_PHONE)) {
-        // Demo/test account — preload 6 months of mock data, skip onboarding.
-        setIncome(100000);
-        setBudget(45000);
-        setTransactions(generateDemoTransactions(6));
-        setGoals(DEMO_GOALS);
-        setBanks(DEMO_BANKS);
         setLandingDone(true);
         setOnboardingDone(true);
         setActiveView('dashboard');
@@ -136,7 +134,6 @@ function App() {
   // Persist app data for the signed-in user (debounced) once onboarded.
   useEffect(() => {
     if (!firebaseEnabled || !firebaseUser || !onboardingDone || !hydrated) return;
-    if ((firebaseUser.phoneNumber || '').includes(FRESH_DEMO_PHONE)) return; // stays stateless
 
     const t = setTimeout(() => {
       saveUserData(firebaseUser.uid, {
@@ -213,7 +210,31 @@ function App() {
   // not as an upfront gate).
   const handleSignup = () => setLandingDone(true);
 
-  const handleLogin = () => {
+  // Demo/test account — preload 6 months of mock data, skip onboarding.
+  const seedDemo = () => {
+    setIncome(100000);
+    setBudget(45000);
+    setTransactions(generateDemoTransactions(6));
+    setGoals(DEMO_GOALS);
+    setBanks(DEMO_BANKS);
+    setHydrated(true);
+    setLandingDone(true);
+    setOnboardingDone(true);
+    setActiveView('dashboard');
+  };
+
+  const handleLogin = (phone) => {
+    // Demo numbers bypass Firebase — route them locally.
+    if (isDemoPhone(phone)) {
+      if (phone === FRESH_DEMO_PHONE) {
+        // Always start a fresh new-user onboarding flow.
+        setOnboardingDone(false);
+        setLandingDone(true);
+      } else {
+        seedDemo();
+      }
+      return;
+    }
     if (firebaseEnabled) {
       // Auth state change triggers the hydrate effect, which sets the rest.
       setLandingDone(true);

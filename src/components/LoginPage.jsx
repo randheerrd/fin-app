@@ -1,7 +1,8 @@
 import { useState, useRef } from 'react';
-import { ArrowLeft, Lock, Pencil } from 'lucide-react';
+import { Lock, Pencil } from 'lucide-react';
 import FinAppLogo from './FinAppLogo';
 import { firebaseEnabled, sendOtp, confirmOtp, resetRecaptcha } from '../lib/firebase';
+import { isDemoPhone, demoCode } from '../data/demoSeed';
 
 const RECAPTCHA_ID = 'login-recaptcha';
 
@@ -18,7 +19,8 @@ export default function LoginPage({ onBack, onSuccess, onSwitch, mode = 'login' 
   const handleSendCode = async () => {
     if (phone.length !== 10) return;
     setError('');
-    if (!firebaseEnabled) {
+    // Demo accounts (and local demo mode) skip Firebase + reCAPTCHA entirely.
+    if (!firebaseEnabled || isDemoPhone(phone)) {
       setStage('otp');
       return;
     }
@@ -37,14 +39,19 @@ export default function LoginPage({ onBack, onSuccess, onSwitch, mode = 'login' 
 
   const verify = async (code) => {
     setError('');
+    if (isDemoPhone(phone)) {
+      if (code === demoCode(phone)) onSuccess(phone);
+      else setError('Invalid code. Please try again.');
+      return;
+    }
     if (!firebaseEnabled) {
-      onSuccess();
+      onSuccess(phone);
       return;
     }
     setLoading(true);
     try {
       await confirmOtp(confirmationRef.current, code);
-      onSuccess();
+      onSuccess(phone);
     } catch (e) {
       console.error(e);
       setError('Invalid code. Please try again.');
@@ -64,19 +71,13 @@ export default function LoginPage({ onBack, onSuccess, onSwitch, mode = 'login' 
   return (
     <div className="min-h-screen bg-white flex flex-col">
       <header className="p-6">
-        <button
-          onClick={onBack}
-          className="flex items-center gap-1.5 text-sm text-[#6b7280] hover:text-[#111827] transition-colors"
-        >
-          <ArrowLeft size={16} />
-          Back to home
+        <button onClick={onBack} aria-label="Back to home" className="inline-flex">
+          <FinAppLogo color="#0E3F2E" className="h-7 w-auto" />
         </button>
       </header>
 
       <div className="flex-1 flex items-center justify-center px-6 pb-20">
         <div className="w-full max-w-sm">
-          <FinAppLogo color="#0E3F2E" className="h-7 w-auto mb-8" />
-
           <h1 className="font-display text-4xl text-[#111827] mb-1.5">
             {stage === 'otp' ? 'Enter the code' : isSignup ? 'Create your account' : 'Log in'}
           </h1>

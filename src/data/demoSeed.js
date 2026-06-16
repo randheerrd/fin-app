@@ -4,6 +4,15 @@
 export const DEMO_PHONE = '9876543210'; // login / returning user — preloaded with 6 months of data
 export const FRESH_DEMO_PHONE = '1234567890'; // signup / new user — always starts a fresh onboarding flow
 
+// Demo accounts skip Firebase entirely (no reCAPTCHA / SMS / billing) — the OTP
+// is validated locally against these fixed codes.
+export const DEMO_CODES = {
+  [DEMO_PHONE]: '111111',
+  [FRESH_DEMO_PHONE]: '000000',
+};
+export const isDemoPhone = (p = '') => Object.prototype.hasOwnProperty.call(DEMO_CODES, p);
+export const demoCode = (p = '') => DEMO_CODES[p];
+
 const MERCHANTS = [
   { name: 'Swiggy', category: 'food', min: 180, max: 720 },
   { name: 'Zomato', category: 'food', min: 160, max: 680 },

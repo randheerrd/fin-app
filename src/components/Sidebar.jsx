@@ -1,4 +1,4 @@
-import { Search, Home, MessageSquare, LayoutGrid, Bookmark, PanelLeftClose, ChevronsUpDown } from 'lucide-react';
+import { Search, Home, MessageSquare, LayoutGrid, Bookmark, ChevronsUpDown } from 'lucide-react';
 import FinAppLogo from './FinAppLogo';
 
 const NAV_ITEMS = [
@@ -13,13 +13,12 @@ export default function Sidebar({ activeView, setActiveView, onSearch }) {
   return (
     <div className="w-56 bg-[#0E3F2E] flex flex-col h-screen fixed left-0 top-0 z-10 px-2">
       {/* Logo */}
-      <div className="h-16 flex items-center justify-between px-3">
+      <div className="h-14 flex items-center px-3">
         <FinAppLogo color="#ffffff" className="h-6 w-auto" />
-        <PanelLeftClose size={16} className="text-white/50" />
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 overflow-y-auto pt-2 space-y-1">
+      <nav className="flex-1 overflow-y-auto">
         <button
           onClick={onSearch}
           className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-white/60 hover:bg-white/10 hover:text-white transition-colors"
