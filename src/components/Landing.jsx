@@ -1,16 +1,59 @@
 import { useState, useRef } from 'react';
 import { ArrowRight, ShieldCheck, PieChart, Target, X, Lock, Pencil } from 'lucide-react';
 import FinAppLogo from './FinAppLogo';
+import { firebaseEnabled, sendOtp, confirmOtp } from '../lib/firebase';
 
 function Logo() {
   return <FinAppLogo color="#0E3F2E" className="h-7 w-auto" />;
 }
 
+const RECAPTCHA_ID = 'recaptcha-container';
+
 function LoginModal({ onClose, onSuccess, onSignup }) {
   const [stage, setStage] = useState('phone'); // 'phone' | 'otp'
   const [phone, setPhone] = useState('');
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const confirmationRef = useRef(null);
   const refs = [useRef(), useRef(), useRef(), useRef(), useRef(), useRef()];
+
+  const handleSendCode = async () => {
+    if (phone.length !== 10) return;
+    setError('');
+    if (!firebaseEnabled) {
+      // Demo mode — no real SMS, just advance to the code screen.
+      setStage('otp');
+      return;
+    }
+    setLoading(true);
+    try {
+      confirmationRef.current = await sendOtp(phone, RECAPTCHA_ID);
+      setStage('otp');
+    } catch (e) {
+      console.error(e);
+      setError('Could not send code. Check the number and try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const verify = async (code) => {
+    setError('');
+    if (!firebaseEnabled) {
+      onSuccess();
+      return;
+    }
+    setLoading(true);
+    try {
+      await confirmOtp(confirmationRef.current, code);
+      onSuccess();
+    } catch (e) {
+      console.error(e);
+      setError('Invalid code. Please try again.');
+      setLoading(false);
+    }
+  };
 
   const handleOtp = (i, v) => {
     if (!/^\d*$/.test(v)) return;
@@ -18,7 +61,7 @@ function LoginModal({ onClose, onSuccess, onSignup }) {
     next[i] = v.slice(-1);
     setOtp(next);
     if (v && i < 5) refs[i + 1].current?.focus();
-    if (next.every((d) => d)) setTimeout(onSuccess, 250);
+    if (next.every((d) => d)) verify(next.join(''));
   };
 
   return (
@@ -62,17 +105,17 @@ function LoginModal({ onClose, onSuccess, onSignup }) {
                 maxLength={10}
                 value={phone}
                 onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
-                onKeyDown={(e) => e.key === 'Enter' && phone.length === 10 && setStage('otp')}
+                onKeyDown={(e) => e.key === 'Enter' && phone.length === 10 && handleSendCode()}
                 placeholder="9876543210"
                 className="flex-1 pr-4 py-3 text-sm text-[#111827] outline-none placeholder:text-[#9ca3af]"
               />
             </div>
             <button
-              onClick={() => setStage('otp')}
-              disabled={phone.length !== 10}
+              onClick={handleSendCode}
+              disabled={phone.length !== 10 || loading}
               className="w-full py-3 bg-[#0E3F2E] text-white text-sm font-semibold rounded-lg hover:bg-[#0a3122] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
             >
-              Send code
+              {loading ? 'Sending…' : 'Send code'}
             </button>
           </>
         ) : (
@@ -96,18 +139,23 @@ function LoginModal({ onClose, onSuccess, onSignup }) {
               ))}
             </div>
             <button
-              onClick={onSuccess}
-              disabled={otp.some((d) => !d)}
+              onClick={() => verify(otp.join(''))}
+              disabled={otp.some((d) => !d) || loading}
               className="w-full py-3 bg-[#0E3F2E] text-white text-sm font-semibold rounded-lg hover:bg-[#0a3122] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
             >
-              Verify &amp; log in
+              {loading ? 'Verifying…' : 'Verify & log in'}
             </button>
           </>
         )}
 
+        {error && <p className="text-red-500 text-xs text-center mt-3">{error}</p>}
+
+        {/* Invisible reCAPTCHA target for Firebase Phone Auth */}
+        <div id={RECAPTCHA_ID} />
+
         <p className="text-xs text-[#9ca3af] flex items-center justify-center gap-1.5 mt-4">
           <Lock size={11} />
-          Phone login only · OTP-secured
+          {firebaseEnabled ? 'Phone login · OTP via SMS' : 'Phone login only · OTP-secured (demo)'}
         </p>
 
         <p className="text-sm text-[#6b7280] text-center mt-5">
