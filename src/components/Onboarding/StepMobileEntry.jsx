@@ -1,12 +1,29 @@
 import { useState } from 'react';
 import { ArrowLeft, ArrowRight, Lock } from 'lucide-react';
+import accountAggregatorAPI from '../../lib/api';
 
 export default function StepMobileEntry({ onSubmit, onBack }) {
   const [mobile, setMobile] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  const handleSubmit = () => {
-    if (mobile.length === 10) {
-      onSubmit(mobile);
+  const handleSubmit = async () => {
+    if (mobile.length !== 10) return;
+
+    setLoading(true);
+    setError('');
+
+    try {
+      const response = await accountAggregatorAPI.initiateConsent(mobile);
+      if (response.consent_id || response.consentId) {
+        onSubmit(mobile, response.consent_id || response.consentId);
+      } else {
+        throw new Error('No consent ID received');
+      }
+    } catch (err) {
+      setError('Failed to connect. Please try again.');
+      console.error('Consent initiation error:', err);
+      setLoading(false);
     }
   };
 
@@ -31,21 +48,24 @@ export default function StepMobileEntry({ onSubmit, onBack }) {
             placeholder="9876543210"
             value={mobile}
             onChange={(e) => setMobile(e.target.value.replace(/\D/g, '').slice(0, 10))}
-            onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
-            className="flex-1 pr-4 py-2.5 text-[#111827] text-sm placeholder-[#9ca3af] outline-none bg-transparent"
+            onKeyDown={(e) => e.key === 'Enter' && !loading && handleSubmit()}
+            disabled={loading}
+            className="flex-1 pr-4 py-2.5 text-[#111827] text-sm placeholder-[#9ca3af] outline-none bg-transparent disabled:opacity-50"
           />
         </div>
         <p className="text-[#9ca3af] text-xs mt-2 flex items-center gap-1">
           <Lock size={11} />
           Read-only access · RBI-regulated AA network · Your credentials never touch our servers
         </p>
+        {error && <p className="text-red-500 text-xs mt-2">{error}</p>}
       </div>
 
       <div className="flex items-center justify-between">
         {onBack ? (
           <button
             onClick={onBack}
-            className="flex items-center gap-1.5 text-sm text-[#6b7280] hover:text-[#111827] transition-colors"
+            disabled={loading}
+            className="flex items-center gap-1.5 text-sm text-[#6b7280] hover:text-[#111827] transition-colors disabled:opacity-50"
           >
             <ArrowLeft size={16} />
             Back
@@ -53,11 +73,11 @@ export default function StepMobileEntry({ onSubmit, onBack }) {
         ) : <div />}
         <button
           onClick={handleSubmit}
-          disabled={mobile.length !== 10}
+          disabled={mobile.length !== 10 || loading}
           className="flex items-center gap-2 px-5 py-2.5 bg-[#1B3A2F] text-white text-sm font-medium rounded-lg hover:bg-[#142D24] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
         >
-          Find my account
-          <ArrowRight size={16} />
+          {loading ? 'Connecting...' : 'Find my account'}
+          {!loading && <ArrowRight size={16} />}
         </button>
       </div>
     </div>

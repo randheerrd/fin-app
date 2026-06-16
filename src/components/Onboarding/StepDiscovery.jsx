@@ -7,7 +7,7 @@ const MOCK_ACCOUNTS = [
   { bank: 'ICICI Bank', type: 'Saving account', mask: '··2291' },
 ];
 
-export default function StepDiscovery({ mobile, onComplete }) {
+export default function StepDiscovery({ mobile, token, onComplete }) {
   const [message, setMessage] = useState('Connecting to HDFC Bank…');
 
   useEffect(() => {
@@ -26,7 +26,7 @@ export default function StepDiscovery({ mobile, onComplete }) {
       await new Promise(r => setTimeout(r, 800));
 
       try {
-        const response = await accountAggregatorAPI.fetchAccounts(mobile);
+        const response = await accountAggregatorAPI.fetchAccounts(mobile, token);
         const accounts = response.accounts || [];
         if (accounts.length === 0) {
           const fallback = mobile.endsWith('0000') ? [] : MOCK_ACCOUNTS;
@@ -47,7 +47,7 @@ export default function StepDiscovery({ mobile, onComplete }) {
     };
 
     discoverAccounts();
-  }, [mobile, onComplete]);
+  }, [mobile, token, onComplete]);
 
   return (
     <div className="py-8 text-center">

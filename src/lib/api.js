@@ -57,14 +57,20 @@ export const accountAggregatorAPI = {
   },
 
   // Fetch linked accounts for the phone number
-  async fetchAccounts(phoneNumber) {
+  async fetchAccounts(phoneNumber, token) {
     try {
+      const headers = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${AA_API_KEY}`,
+      };
+
+      if (token) {
+        headers['X-Verification-Token'] = token;
+      }
+
       const response = await fetch(`${AA_BASE_URL}/v1/accounts?phone=${phoneNumber}`, {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${AA_API_KEY}`,
-        },
+        headers,
       });
 
       if (!response.ok) {

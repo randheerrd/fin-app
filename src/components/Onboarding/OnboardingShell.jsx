@@ -32,6 +32,8 @@ export default function OnboardingShell({
   const [step, setStep] = useState(linkingMode ? 'mobile' : 'path');
   const [path, setPath] = useState(null);
   const [mobile, setMobile] = useState('');
+  const [consentId, setConsentId] = useState('');
+  const [token, setToken] = useState('');
   const [income, setIncome] = useState(100000);
   const [budget, setBudget] = useState(50000);
   const [otp, setOtp] = useState('');
@@ -67,8 +69,9 @@ export default function OnboardingShell({
     }
   };
 
-  const handleMobileSubmit = (phoneNumber) => {
+  const handleMobileSubmit = (phoneNumber, cid) => {
     setMobile(phoneNumber);
+    setConsentId(cid);
     setStep('otp');
   };
 
@@ -76,15 +79,20 @@ export default function OnboardingShell({
     if (linkingMode) return;
     setStep(path === 'track' ? 'track-setup' : 'goal-setup');
     setMobile('');
+    setConsentId('');
+    setToken('');
   };
 
-  const handleOTPSubmit = (otpCode) => {
+  const handleOTPSubmit = (otpCode, verificationToken) => {
     setOtp(otpCode);
+    setToken(verificationToken);
     setStep('discovery');
   };
 
   const handleOTPChangeNumber = () => {
     setMobile('');
+    setConsentId('');
+    setToken('');
     setOtp('');
     setStep('mobile');
   };
@@ -102,6 +110,8 @@ export default function OnboardingShell({
 
   const handleNoAccountsTryAgain = () => {
     setMobile('');
+    setConsentId('');
+    setToken('');
     setOtp('');
     setStep('mobile');
   };
@@ -124,6 +134,8 @@ export default function OnboardingShell({
 
   const handleAccountBack = () => {
     setMobile('');
+    setConsentId('');
+    setToken('');
     setOtp('');
     setStep('mobile');
   };
@@ -197,6 +209,7 @@ export default function OnboardingShell({
               {step === 'otp' && (
                 <StepOTP
                   mobile={mobile}
+                  consentId={consentId}
                   onSubmit={handleOTPSubmit}
                   onChangeNumber={handleOTPChangeNumber}
                 />
@@ -204,6 +217,7 @@ export default function OnboardingShell({
               {step === 'discovery' && (
                 <StepDiscovery
                   mobile={mobile}
+                  token={token}
                   onComplete={handleDiscoveryComplete}
                 />
               )}
