@@ -2,39 +2,44 @@ import { TrendingUp, Target } from 'lucide-react';
 
 export default function StepPathChoice({ onChoose }) {
   return (
-    <div className="max-w-md w-full px-4">
-      <div className="text-center mb-12">
-        <h1 className="font-serif text-4xl text-text-primary mb-2">Fin-app</h1>
-        <p className="text-text-dim">Get calm clarity on your money</p>
+    <div className="max-w-2xl w-full px-8">
+      <div className="text-center mb-16">
+        <div className="flex justify-center gap-2 mb-12">
+          {[1, 2, 3, 4, 5].map(i => (
+            <div key={i} className={`w-2 h-2 rounded-full ${i === 1 ? 'bg-accent' : 'bg-bg-border'}`} />
+          ))}
+        </div>
+        <h1 className="font-serif text-4xl font-bold text-text-primary mb-4">What do you want to do first?</h1>
+        <p className="text-text-secondary">FinApp shapes itself around the answer. You can do both later.</p>
       </div>
 
       <div className="space-y-4">
         <button
           onClick={() => onChoose('track')}
-          className="w-full p-6 bg-bg-card border border-line rounded-lg hover:bg-bg-raise transition-colors text-left group"
+          className="w-full p-6 bg-white border-2 border-bg-border rounded-lg hover:border-accent hover:bg-blue-50 transition-all text-left group"
         >
           <div className="flex items-start gap-4">
-            <div className="p-3 bg-sage/20 rounded-lg group-hover:bg-sage/30 transition-colors">
-              <TrendingUp className="text-sage" size={24} />
+            <div className="p-3 bg-blue-50 rounded-lg group-hover:bg-blue-100 transition-colors flex-shrink-0">
+              <TrendingUp className="text-accent" size={24} />
             </div>
             <div>
-              <h3 className="font-medium text-text-primary mb-1">Track spending</h3>
-              <p className="text-sm text-text-dim">See where your money goes every month</p>
+              <h3 className="font-semibold text-text-primary text-lg mb-1">Understand my spending</h3>
+              <p className="text-text-secondary text-sm">See where the money actually goes, each month</p>
             </div>
           </div>
         </button>
 
         <button
           onClick={() => onChoose('goal')}
-          className="w-full p-6 bg-bg-card border border-line rounded-lg hover:bg-bg-raise transition-colors text-left group"
+          className="w-full p-6 bg-white border-2 border-bg-border rounded-lg hover:border-accent hover:bg-blue-50 transition-all text-left group"
         >
           <div className="flex items-start gap-4">
-            <div className="p-3 bg-sage/20 rounded-lg group-hover:bg-sage/30 transition-colors">
-              <Target className="text-sage" size={24} />
+            <div className="p-3 bg-blue-50 rounded-lg group-hover:bg-blue-100 transition-colors flex-shrink-0">
+              <Target className="text-accent" size={24} />
             </div>
             <div>
-              <h3 className="font-medium text-text-primary mb-1">Work toward a goal</h3>
-              <p className="text-sm text-text-dim">Save for something specific</p>
+              <h3 className="font-semibold text-text-primary text-lg mb-1">Works towards a goal</h3>
+              <p className="text-text-secondary text-sm">connect everyday spending to something that matters</p>
             </div>
           </div>
         </button>

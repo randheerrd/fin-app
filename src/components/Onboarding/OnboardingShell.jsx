@@ -17,13 +17,12 @@ export default function OnboardingShell({
   onLinkBankComplete,
 }) {
   const [step, setStep] = useState(linkingMode ? 'mobile' : 'path');
-  const [path, setPath] = useState(null); // 'track' or 'goal'
+  const [path, setPath] = useState(null);
   const [mobile, setMobile] = useState('');
   const [otp, setOtp] = useState('');
   const [foundAccounts, setFoundAccounts] = useState([]);
   const [selectedAccounts, setSelectedAccounts] = useState([]);
 
-  // Step 1: Path choice
   const handlePathChoice = (chosen) => {
     setPath(chosen);
     if (chosen === 'track') {
@@ -33,7 +32,6 @@ export default function OnboardingShell({
     }
   };
 
-  // Step 2a: Track path setup
   const handleTrackSetup = (action) => {
     if (action === 'continue') {
       setStep('mobile');
@@ -42,7 +40,6 @@ export default function OnboardingShell({
     }
   };
 
-  // Step 2b: Goal path setup
   const handleGoalSetup = (action) => {
     if (action === 'continue') {
       setStep('mobile');
@@ -51,22 +48,17 @@ export default function OnboardingShell({
     }
   };
 
-  // Step 3: Mobile entry
   const handleMobileSubmit = (phoneNumber) => {
     setMobile(phoneNumber);
     setStep('otp');
   };
 
   const handleMobileBack = () => {
-    if (linkingMode) {
-      // In linking mode, can't go back
-      return;
-    }
+    if (linkingMode) return;
     setStep(path === 'track' ? 'track-setup' : 'goal-setup');
     setMobile('');
   };
 
-  // Step 4: OTP
   const handleOTPSubmit = (otpCode) => {
     setOtp(otpCode);
     setStep('discovery');
@@ -78,21 +70,17 @@ export default function OnboardingShell({
     setStep('mobile');
   };
 
-  // Step 5: Discovery
   const handleDiscoveryComplete = (accounts) => {
     if (accounts.length === 0) {
-      // No accounts found
       setFoundAccounts([]);
       setStep('no-accounts');
     } else {
-      // Accounts found
       setFoundAccounts(accounts);
-      setSelectedAccounts(accounts.map((_, i) => i === 0)); // Pre-check first
+      setSelectedAccounts(accounts.map((_, i) => i === 0));
       setStep('account-select');
     }
   };
 
-  // Step 6e: No accounts
   const handleNoAccountsTryAgain = () => {
     setMobile('');
     setOtp('');
@@ -103,7 +91,6 @@ export default function OnboardingShell({
     onManualMode();
   };
 
-  // Step 6: Account select
   const handleAccountSelect = (index) => {
     setSelectedAccounts(prev => {
       const updated = [...prev];
@@ -122,7 +109,6 @@ export default function OnboardingShell({
     setStep('mobile');
   };
 
-  // Step 7: Consent
   const handleConsentAccept = () => {
     setStep('import');
   };
@@ -131,7 +117,6 @@ export default function OnboardingShell({
     setStep('account-select');
   };
 
-  // Step 8: Import
   const handleImportComplete = () => {
     const selected = foundAccounts.filter((_, i) => selectedAccounts[i]);
     const bankData = selected.map(acc => ({
@@ -149,7 +134,7 @@ export default function OnboardingShell({
   };
 
   return (
-    <div className="w-full h-full flex items-center justify-center bg-bg">
+    <div className="w-full h-screen flex items-center justify-center bg-white">
       {step === 'path' && <StepPathChoice onChoose={handlePathChoice} />}
       {step === 'track-setup' && <StepTrackSetup onAction={handleTrackSetup} />}
       {step === 'goal-setup' && <StepGoalSetup onAction={handleGoalSetup} />}
