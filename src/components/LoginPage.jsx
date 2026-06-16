@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react';
 import { ArrowLeft, Lock, Pencil } from 'lucide-react';
 import FinAppLogo from './FinAppLogo';
-import { firebaseEnabled, sendOtp, confirmOtp } from '../lib/firebase';
+import { firebaseEnabled, sendOtp, confirmOtp, resetRecaptcha } from '../lib/firebase';
 
 const RECAPTCHA_ID = 'login-recaptcha';
 
@@ -28,7 +28,8 @@ export default function LoginPage({ onBack, onSuccess, onSwitch, mode = 'login' 
       setStage('otp');
     } catch (e) {
       console.error(e);
-      setError('Could not send code. Check the number and try again.');
+      resetRecaptcha(); // so the next attempt builds a fresh verifier
+      setError(e?.code ? `Couldn't send code — ${e.code}` : e?.message || 'Could not send code.');
     } finally {
       setLoading(false);
     }

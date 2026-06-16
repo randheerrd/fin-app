@@ -43,6 +43,18 @@ function getRecaptcha(containerId) {
   return recaptcha;
 }
 
+// Drop the verifier so the next attempt builds a fresh one (after a failure).
+export function resetRecaptcha() {
+  if (recaptcha) {
+    try {
+      recaptcha.clear();
+    } catch {
+      /* ignore */
+    }
+    recaptcha = null;
+  }
+}
+
 /**
  * Send an OTP to a 10-digit Indian number.
  * Returns a confirmationResult you pass to confirmOtp().
