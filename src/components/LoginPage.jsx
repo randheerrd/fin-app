@@ -5,7 +5,8 @@ import { firebaseEnabled, sendOtp, confirmOtp } from '../lib/firebase';
 
 const RECAPTCHA_ID = 'login-recaptcha';
 
-export default function LoginPage({ onBack, onSuccess, onSignup }) {
+export default function LoginPage({ onBack, onSuccess, onSwitch, mode = 'login' }) {
+  const isSignup = mode === 'signup';
   const [stage, setStage] = useState('phone');
   const [phone, setPhone] = useState('');
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
@@ -76,11 +77,11 @@ export default function LoginPage({ onBack, onSuccess, onSignup }) {
           <FinAppLogo color="#0E3F2E" className="h-7 w-auto mb-8" />
 
           <h1 className="font-display text-4xl text-[#111827] mb-1.5">
-            {stage === 'phone' ? 'Log in' : 'Enter the code'}
+            {stage === 'otp' ? 'Enter the code' : isSignup ? 'Create your account' : 'Log in'}
           </h1>
           <p className="text-sm text-[#6b7280] mb-8 flex items-center gap-1.5">
             {stage === 'phone' ? (
-              'Continue with your phone number.'
+              isSignup ? 'Sign up with your phone number.' : 'Continue with your phone number.'
             ) : (
               <>
                 Sent to +91 {phone}
@@ -144,7 +145,7 @@ export default function LoginPage({ onBack, onSuccess, onSignup }) {
                 disabled={otp.some((d) => !d) || loading}
                 className="w-full py-3 bg-[#0E3F2E] text-white text-sm font-semibold rounded-lg hover:bg-[#0a3122] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
               >
-                {loading ? 'Verifying…' : 'Verify & log in'}
+                {loading ? 'Verifying…' : isSignup ? 'Verify & continue' : 'Verify & log in'}
               </button>
             </>
           )}
@@ -158,9 +159,9 @@ export default function LoginPage({ onBack, onSuccess, onSignup }) {
           </p>
 
           <p className="text-sm text-[#6b7280] mt-8">
-            New to FinApp?{' '}
-            <button onClick={onSignup} className="text-[#0E3F2E] font-semibold hover:underline">
-              Create an account
+            {isSignup ? 'Already have an account? ' : 'New to FinApp? '}
+            <button onClick={onSwitch} className="text-[#0E3F2E] font-semibold hover:underline">
+              {isSignup ? 'Log in' : 'Create an account'}
             </button>
           </p>
         </div>

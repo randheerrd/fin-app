@@ -16,9 +16,10 @@ import SearchModal from './components/SearchModal';
 import Toast from './components/Toast';
 import { enrichTransactionsWithIds, BANK_TRANSACTIONS, INITIAL_RECURRING } from './data/seed';
 import { getToday } from './lib/utils';
-import { firebaseEnabled } from './lib/firebase';
+import { firebaseEnabled, logout } from './lib/firebase';
 import { onUser, loadUserData, saveUserData } from './lib/userData';
 import { aaEnabled, waitForConsent, createSession, waitForData, mapTransactions } from './lib/setu';
+import { DEMO_PHONE, generateDemoTransactions, DEMO_BANKS, DEMO_GOALS } from './data/demoSeed';
 
 function App() {
   // Core state
@@ -111,6 +112,16 @@ function App() {
         setLandingDone(true);
         setOnboardingDone(true);
         setActiveView('dashboard');
+      } else if ((firebaseUser.phoneNumber || '').includes(DEMO_PHONE)) {
+        // Demo/test account — preload 6 months of mock data, skip onboarding.
+        setIncome(100000);
+        setBudget(45000);
+        setTransactions(generateDemoTransactions(6));
+        setGoals(DEMO_GOALS);
+        setBanks(DEMO_BANKS);
+        setLandingDone(true);
+        setOnboardingDone(true);
+        setActiveView('dashboard');
       } else {
         // New user — run onboarding; data will be saved under their uid.
         setLandingDone(true);
@@ -193,14 +204,19 @@ function App() {
     { name: 'ICICI Bank', type: 'Saving account', mask: '··2291', synced: 'just now' },
   ];
 
-  // With real Firebase, phone OTP is the single entry point — first-time users
-  // are routed to it too, then the hydrate effect decides onboarding vs dashboard.
+  // Signup and login are distinct screens. With real Firebase both authenticate
+  // by phone OTP, but signup leads into onboarding while login hydrates the
+  // returning user's data (decided in the hydrate effect).
   const handleSignup = () => {
     if (firebaseEnabled) {
-      setAuthScreen('login');
+      setAuthScreen('signup');
       return;
     }
     setLandingDone(true);
+  };
+
+  const handleSignupSuccess = () => {
+    setLandingDone(true); // new user → onboarding (hydrate finds no saved data)
   };
 
   const handleLogin = () => {
@@ -212,6 +228,22 @@ function App() {
     handleBankConnected(DEFAULT_BANKS);
     setLandingDone(true);
     setActiveView('dashboard');
+  };
+
+  const handleLogout = async () => {
+    await logout();
+    setTransactions([]);
+    setGoals([]);
+    setBanks([]);
+    setRecurring([]);
+    setAtmRemaining(0);
+    setManualMode(false);
+    setOnboardingDone(false);
+    setLandingDone(false);
+    setHydrated(false);
+    setAuthScreen('landing');
+    setActiveView('dashboard');
+    localStorage.removeItem('aa_pending');
   };
 
   const handleManualMode = () => {
@@ -340,12 +372,14 @@ function App() {
   // View content
   const renderView = () => {
     if (!landingDone) {
-      if (authScreen === 'login') {
+      if (authScreen === 'login' || authScreen === 'signup') {
+        const isSignup = authScreen === 'signup';
         return (
           <LoginPage
+            mode={authScreen}
             onBack={() => setAuthScreen('landing')}
-            onSuccess={handleLogin}
-            onSignup={handleSignup}
+            onSuccess={isSignup ? handleSignupSuccess : handleLogin}
+            onSwitch={() => setAuthScreen(isSignup ? 'login' : 'signup')}
           />
         );
       }
@@ -439,6 +473,7 @@ function App() {
             setTransactions={setTransactions}
             manualMode={manualMode}
             onLinkBank={handleLinkBankFromSettings}
+            onLogout={firebaseEnabled ? handleLogout : null}
           />
         );
       default:

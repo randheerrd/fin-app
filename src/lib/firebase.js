@@ -6,6 +6,7 @@ import {
   getAuth,
   RecaptchaVerifier,
   signInWithPhoneNumber,
+  signOut,
 } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 
@@ -28,6 +29,10 @@ if (firebaseEnabled) {
 }
 
 export { auth, db };
+
+export function logout() {
+  return auth ? signOut(auth) : Promise.resolve();
+}
 
 // Lazily create one invisible reCAPTCHA verifier bound to a container element id.
 let recaptcha = null;

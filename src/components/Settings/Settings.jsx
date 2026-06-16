@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Shield } from 'lucide-react';
+import { Shield, LogOut } from 'lucide-react';
 import BrandLogo from '../BrandLogo';
 import { bankBrand } from '../../lib/logos';
 import AddBankModal from '../modals/AddBankModal';
@@ -41,6 +41,7 @@ export default function Settings({
   setBanks,
   transactions,
   setTransactions,
+  onLogout,
 }) {
   const [showAddBank, setShowAddBank] = useState(false);
   const handleAddBank = (data) => {
@@ -395,6 +396,17 @@ export default function Settings({
               </p>
             </div>
           </div>
+
+          {/* Logout */}
+          {onLogout && (
+            <button
+              onClick={onLogout}
+              className="w-full flex items-center justify-center gap-2 py-3 border border-[#e5e7eb] text-[#374151] text-sm font-medium rounded-lg hover:bg-[#f9fafb] transition-colors"
+            >
+              <LogOut size={16} />
+              Log out
+            </button>
+          )}
         </div>
       </div>
 
