@@ -45,7 +45,7 @@ function PatternBars({ transactions }) {
   );
 }
 
-export default function Insights({ transactions, manualMode, onLinkBank }) {
+export default function Insights({ transactions, manualMode, onLinkBank, onConnectBank }) {
   const hasEnoughData = transactions.length >= 7;
   const nonAtm = transactions.filter((t) => !t.atm);
   const totalSpent = nonAtm.reduce((s, t) => s + t.amount, 0);
@@ -58,10 +58,11 @@ export default function Insights({ transactions, manualMode, onLinkBank }) {
           icon={Sparkles}
           title="Insights are warming up"
           subtitle="Log expenses for about a week — or link a bank — and your spending patterns will start to appear here."
+          benefits={['Spending trends', 'Category breakdown', 'Subscriptions tracker']}
         >
           {manualMode && (
             <button
-              onClick={onLinkBank}
+              onClick={onConnectBank || onLinkBank}
               className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#0E3F2E] text-white text-sm font-medium rounded-lg hover:bg-[#0a3122] transition-colors"
             >
               <Link size={16} />

@@ -41,8 +41,8 @@ export default function StepAccountSelect({ accounts, selected, onToggle, onCont
               <span className="block text-sm font-semibold text-[#111827]">
                 {acc.bank} · {acc.type}
               </span>
-              <span className="block text-xs text-[#9ca3af] truncate">
-                Sample description of the app and its capabilities will appear here.
+              <span className="block text-xs text-[#9ca3af] tabular-nums">
+                A/C No. ···· {(acc.mask || '').replace(/\D/g, '') || '••••'}
               </span>
             </span>
           </button>

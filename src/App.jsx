@@ -12,6 +12,7 @@ import Insights from './components/Insights/Insights';
 import Settings from './components/Settings/Settings';
 import AddExpenseModal from './components/modals/AddExpenseModal';
 import AtmSplitModal from './components/modals/AtmSplitModal';
+import AddBankModal from './components/modals/AddBankModal';
 import SearchModal from './components/SearchModal';
 import Toast from './components/Toast';
 import { enrichTransactionsWithIds, BANK_TRANSACTIONS, INITIAL_RECURRING } from './data/seed';
@@ -59,6 +60,7 @@ function App() {
   // Modal state
   const [showAddExpense, setShowAddExpense] = useState(false);
   const [showAtmSplit, setShowAtmSplit] = useState(false);
+  const [showConnectBank, setShowConnectBank] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
   const [toast, setToast] = useState(null);
   const mainContentRef = useRef(null);
@@ -283,6 +285,18 @@ function App() {
     setOnboardingDone(false); // re-run onboarding to connect
   };
 
+  // Link a bank from the in-app "Connect bank" modal. Adds the account and, if
+  // there's no data yet, pulls in history so the app comes alive immediately.
+  const connectBank = (data) => {
+    setBanks((prev) => [...prev, { name: data.name, type: data.type, mask: data.mask, synced: 'just now' }]);
+    setManualMode(false);
+    if (transactions.length === 0) {
+      setTransactions(generateDemoTransactions(6));
+    }
+    setShowConnectBank(false);
+    showToast(`${data.name} linked`, 'success');
+  };
+
   // Transaction handlers
   const addTransaction = (data) => {
     const newTxn = {
@@ -442,6 +456,7 @@ function App() {
             onDeleteTransaction={deleteTransaction}
             searchQuery={spendSearch}
             onClearSearch={() => setSpendSearch('')}
+            onConnectBank={() => setShowConnectBank(true)}
           />
         );
       case 'goals':
@@ -477,6 +492,7 @@ function App() {
             income={income}
             goals={goals}
             onLinkBank={handleLinkBankFromSettings}
+            onConnectBank={() => setShowConnectBank(true)}
           />
         );
       case 'settings':
@@ -572,6 +588,10 @@ function App() {
           onClose={() => setShowAtmSplit(false)}
           onAddSplit={addAtmSplit}
         />
+      )}
+
+      {showConnectBank && (
+        <AddBankModal onClose={() => setShowConnectBank(false)} onAdd={connectBank} />
       )}
 
       {/* Search */}

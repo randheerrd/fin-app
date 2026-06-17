@@ -11,8 +11,9 @@ const initialDeadlineValue = (d) => {
   return parsed ? toMonthValue(parsed) : '';
 };
 
-export default function AddGoalModal({ onClose, onSave, onDelete, initial }) {
-  const isEdit = Boolean(initial);
+export default function AddGoalModal({ onClose, onSave, onDelete, initial, forceCreate = false }) {
+  // forceCreate: prefilled (e.g. from a template) but still a brand-new goal.
+  const isEdit = Boolean(initial) && !forceCreate;
   const today = new Date();
   useEffect(() => {
     const h = (e) => e.key === 'Escape' && onClose();

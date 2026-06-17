@@ -6,6 +6,14 @@ import EmptyState from '../EmptyState';
 
 const fmt = (n) => `₹${Math.round(n).toLocaleString('en-IN')}`;
 
+// One-tap starter goals — open the form prefilled so the empty state is actionable.
+const GOAL_TEMPLATES = [
+  { emoji: '🛟', name: 'Emergency Fund', target: 200000, monthly: 16000 },
+  { emoji: '✈️', name: 'Vacation', target: 80000, monthly: 8000 },
+  { emoji: '💻', name: 'New Laptop', target: 90000, monthly: 7500 },
+  { emoji: '📱', name: 'New Phone', target: 70000, monthly: 7000 },
+];
+
 export default function Goals({
   goals,
   transactions,
@@ -18,6 +26,16 @@ export default function Goals({
 }) {
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingGoal, setEditingGoal] = useState(null);
+  const [prefill, setPrefill] = useState(null);
+
+  const openTemplate = (tpl) => {
+    setPrefill(tpl);
+    setShowAddModal(true);
+  };
+  const closeAdd = () => {
+    setShowAddModal(false);
+    setPrefill(null);
+  };
 
   const onTrackCount = goals.filter((g) => {
     if (g.isNew) return true;
@@ -37,15 +55,35 @@ export default function Goals({
           subtitle="Declare a goal — name one, set a target, and every linked rupee starts meaning something."
         >
           <button
-            onClick={() => setShowAddModal(true)}
+            onClick={() => { setPrefill(null); setShowAddModal(true); }}
             className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#0E3F2E] text-white text-sm font-medium rounded-lg hover:bg-[#0a3122] transition-colors"
           >
             <Plus size={16} />
             Add your first goal
           </button>
+
+          <p className="text-xs text-[#9ca3af] mt-7 mb-3">Or start from a template</p>
+          <div className="flex flex-wrap justify-center gap-2.5">
+            {GOAL_TEMPLATES.map((tpl) => (
+              <button
+                key={tpl.name}
+                onClick={() => openTemplate(tpl)}
+                className="inline-flex items-center gap-2 px-3.5 py-2 rounded-full border border-[#e5e7eb] bg-white text-sm text-[#374151] hover:border-[#0E3F2E] hover:bg-[#F0F7F3] transition-colors"
+              >
+                <span>{tpl.emoji}</span>
+                {tpl.name}
+                <span className="text-xs text-[#9ca3af]">{fmt(tpl.target)}</span>
+              </button>
+            ))}
+          </div>
         </EmptyState>
         {showAddModal && (
-          <AddGoalModal onClose={() => setShowAddModal(false)} onSave={(d) => { onAddGoal(d); setShowAddModal(false); }} />
+          <AddGoalModal
+            initial={prefill}
+            forceCreate={!!prefill}
+            onClose={closeAdd}
+            onSave={(d) => { onAddGoal(d); closeAdd(); }}
+          />
         )}
       </div>
     );
@@ -112,7 +150,12 @@ export default function Goals({
       </div>
 
       {showAddModal && (
-        <AddGoalModal onClose={() => setShowAddModal(false)} onSave={(d) => { onAddGoal(d); setShowAddModal(false); }} />
+        <AddGoalModal
+          initial={prefill}
+          forceCreate={!!prefill}
+          onClose={closeAdd}
+          onSave={(d) => { onAddGoal(d); closeAdd(); }}
+        />
       )}
 
       {editingGoal && (

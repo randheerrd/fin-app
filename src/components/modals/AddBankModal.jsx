@@ -1,9 +1,17 @@
 import { useState, useEffect } from 'react';
-import { X, Search, Building2, Lock, ChevronDown, Check } from 'lucide-react';
+import { X, Search, Building2, Lock, ChevronDown, Check, AlertCircle } from 'lucide-react';
 import BrandLogo from '../BrandLogo';
 import { INDIAN_BANKS, ACCOUNT_TYPES } from '../../data/banks';
 
-export default function AddBankModal({ onClose, onAdd }) {
+// Demo AA name-verification: does this account number belong to the signed-in
+// user? Deterministic so the same number always gives the same result. We never
+// surface anyone else's name — just whether it matches.
+function isOwnAccount(digits) {
+  const sum = [...digits].reduce((a, c) => a + Number(c), 0);
+  return sum % 2 === 0;
+}
+
+export default function AddBankModal({ onClose, onAdd, holderName = 'Randheer Kumar' }) {
   const [query, setQuery] = useState('');
   const [open, setOpen] = useState(false);
   useEffect(() => {
@@ -22,7 +30,9 @@ export default function AddBankModal({ onClose, onAdd }) {
 
   const list = INDIAN_BANKS.filter((b) => b.name.toLowerCase().includes(query.trim().toLowerCase()));
   const digits = acctNo.replace(/\D/g, '');
-  const canAdd = bank && digits.length >= 4 && consent;
+  const verified = digits.length >= 9; // enough digits to "look up" the holder
+  const matched = verified && isOwnAccount(digits);
+  const canAdd = bank && verified && matched && consent;
 
   const submit = () => {
     if (!canAdd) return;
@@ -133,7 +143,26 @@ export default function AddBankModal({ onClose, onAdd }) {
               placeholder="0000 0000 0000 0000"
               className="w-full px-4 py-3 border border-[#e5e7eb] rounded-lg text-sm text-[#111827] tracking-wide tabular-nums outline-none focus:border-[#0E3F2E] placeholder:text-[#9ca3af]"
             />
-            <p className="text-xs text-[#9ca3af] mt-1">Only the last 4 digits are stored.</p>
+            {!verified ? (
+              <p className="text-xs text-[#9ca3af] mt-1">Only the last 4 digits are stored.</p>
+            ) : matched ? (
+              <div className="flex items-center gap-2 mt-2.5 px-3 py-2 bg-[#F0F7F3] border border-[#0E3F2E]/15 rounded-lg">
+                <span className="w-5 h-5 rounded-full bg-[#15803D] flex items-center justify-center flex-shrink-0">
+                  <Check size={12} className="text-white" strokeWidth={3} />
+                </span>
+                <div className="leading-tight">
+                  <p className="text-sm font-semibold text-[#111827]">{holderName}</p>
+                  <p className="text-[11px] text-[#15803D]">Account holder verified</p>
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 mt-2.5 px-3 py-2 bg-[#FEF2F2] border border-red-200 rounded-lg">
+                <AlertCircle size={15} className="text-red-500 flex-shrink-0" />
+                <p className="text-xs text-red-500">
+                  This account isn’t registered under {holderName}. You can only link your own accounts.
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Consent */}

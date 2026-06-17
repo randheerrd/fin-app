@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, Calendar, ArrowDown, ArrowUp, ChevronsUpDown, X, RotateCcw, CreditCard } from 'lucide-react';
+import { Plus, Calendar, ArrowDown, ArrowUp, ChevronsUpDown, X, RotateCcw, CreditCard, SearchX } from 'lucide-react';
 import { CATEGORIES, getCategoryChip } from '../../data/categories';
 import DuplicateBanner from './DuplicateBanner';
 import MerchantLogo from '../MerchantLogo';
@@ -60,6 +60,7 @@ export default function Spend({
   onDeleteTransaction,
   searchQuery = '',
   onClearSearch,
+  onConnectBank,
 }) {
   const [category, setCategory] = useState('all');
   const [source, setSource] = useState('all');
@@ -156,14 +157,25 @@ export default function Spend({
           icon={CreditCard}
           title="No expenses yet"
           subtitle="Add an expense or link a bank — they'll show up here, auto-categorised and ready to track."
+          benefits={['Auto-categorised', 'Duplicate detection', 'Bank sync']}
         >
-          <button
-            onClick={onAddExpense}
-            className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#0E3F2E] text-white text-sm font-medium rounded-lg hover:bg-[#0a3122] transition-colors"
-          >
-            <Plus size={16} />
-            Add your first expense
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={onAddExpense}
+              className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#0E3F2E] text-white text-sm font-medium rounded-lg hover:bg-[#0a3122] transition-colors"
+            >
+              <Plus size={16} />
+              Add your first expense
+            </button>
+            {onConnectBank && (
+              <button
+                onClick={onConnectBank}
+                className="inline-flex items-center gap-2 px-4 py-2.5 border border-[#e5e7eb] text-[#374151] text-sm font-medium rounded-lg hover:bg-[#f9fafb] transition-colors"
+              >
+                Link a bank
+              </button>
+            )}
+          </div>
         </EmptyState>
       </div>
     );
@@ -271,7 +283,24 @@ export default function Spend({
         </div>
       </div>
 
-      {/* Table */}
+      {/* Table — or a no-results state when filters/search hide everything */}
+      {filtered.length === 0 ? (
+        <EmptyState
+          icon={SearchX}
+          title="No transactions match"
+          subtitle="Nothing fits the current filters, period, or search. Try widening them."
+        >
+          {filtersActive && (
+            <button
+              onClick={resetFilters}
+              className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#0E3F2E] text-white text-sm font-medium rounded-lg hover:bg-[#0a3122] transition-colors"
+            >
+              <RotateCcw size={16} />
+              Reset filters
+            </button>
+          )}
+        </EmptyState>
+      ) : (
       <div className="border border-[#ECEEF0] rounded-2xl shadow-[0_1px_2px_rgba(16,24,40,0.04)] overflow-hidden">
         <table className="w-full">
           <thead>
@@ -323,6 +352,7 @@ export default function Spend({
           </tbody>
         </table>
       </div>
+      )}
 
       {editing && (
         <AddExpenseModal
