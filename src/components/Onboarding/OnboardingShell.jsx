@@ -142,6 +142,7 @@ export default function OnboardingShell({ onComplete }) {
                   selected={selectedAccounts}
                   onToggle={toggleAccount}
                   onContinue={() => setStep('consent')}
+                  onSkip={() => finish([])}
                   onBack={backToNumbers}
                   onAddAnother={addAnotherAccount}
                 />

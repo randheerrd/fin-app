@@ -1,6 +1,8 @@
 import { useState } from 'react';
-import { ArrowLeft, ArrowRight, Plus, Check } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Plus, Check, AlertTriangle } from 'lucide-react';
 import { CATEGORIES } from '../../data/categories';
+import MonthYearPicker from '../MonthYearPicker';
+import { parseMonthYear, fmtMonth, goalInsight } from '../../lib/goalMath';
 
 export default function StepGoalSetup({ onAction }) {
   const [name, setName] = useState('');
@@ -19,7 +21,7 @@ export default function StepGoalSetup({ onAction }) {
         target: parseFloat(target) || 0,
         saved: 0,
         monthly: monthly ? parseFloat(monthly) : 0,
-        deadline,
+        deadline: parseMonthYear(deadline) ? fmtMonth(parseMonthYear(deadline)) : '',
         linked,
       },
     });
@@ -27,6 +29,10 @@ export default function StepGoalSetup({ onAction }) {
 
   const inputClass =
     'w-full px-4 py-3 border border-[#e5e7eb] rounded-lg text-sm text-[#111827] outline-none focus:border-[#0E3F2E] placeholder:text-[#9ca3af]';
+
+  // Reality-check connecting Target ↔ Monthly ↔ Deadline.
+  const today = new Date();
+  const insight = goalInsight(target, monthly, deadline);
 
   return (
     <div>
@@ -78,12 +84,27 @@ export default function StepGoalSetup({ onAction }) {
 
         <div>
           <label className="block text-sm font-medium text-[#374151] mb-1.5">Deadline</label>
-          <input
+          <MonthYearPicker
             value={deadline}
-            onChange={(e) => setDeadline(e.target.value)}
-            placeholder="Dec 2026"
-            className={inputClass}
+            onChange={setDeadline}
+            min={today}
+            placeholder="Select month"
+            className={`${inputClass} text-left`}
           />
+          {insight && (
+            <p
+              className={`mt-2 text-xs flex items-start gap-1.5 ${
+                insight.tone === 'ok' ? 'text-[#15803D]' : 'text-[#B45309]'
+              }`}
+            >
+              {insight.tone === 'ok' ? (
+                <Check size={13} className="mt-px flex-shrink-0" />
+              ) : (
+                <AlertTriangle size={13} className="mt-px flex-shrink-0" />
+              )}
+              {insight.text}
+            </p>
+          )}
         </div>
 
         <div>

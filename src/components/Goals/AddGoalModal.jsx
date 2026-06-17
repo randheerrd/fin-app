@@ -1,9 +1,18 @@
 import { useState, useEffect } from 'react';
-import { X, Plus, Check, Trash2 } from 'lucide-react';
+import { X, Plus, Check, Trash2, AlertTriangle } from 'lucide-react';
 import { CATEGORIES } from '../../data/categories';
+import MonthYearPicker from '../MonthYearPicker';
+import { parseMonthYear, fmtMonth, toMonthValue, goalInsight } from '../../lib/goalMath';
+
+// Normalize an incoming deadline label ("Dec 2026") to the picker's "YYYY-MM".
+const initialDeadlineValue = (d) => {
+  const parsed = parseMonthYear(d);
+  return parsed ? toMonthValue(parsed) : '';
+};
 
 export default function AddGoalModal({ onClose, onSave, onDelete, initial }) {
   const isEdit = Boolean(initial);
+  const today = new Date();
   useEffect(() => {
     const h = (e) => e.key === 'Escape' && onClose();
     window.addEventListener('keydown', h);
@@ -12,8 +21,10 @@ export default function AddGoalModal({ onClose, onSave, onDelete, initial }) {
   const [name, setName] = useState(initial?.name || '');
   const [target, setTarget] = useState(initial ? String(initial.target) : '');
   const [monthly, setMonthly] = useState(initial?.monthly ? String(initial.monthly) : '');
-  const [deadline, setDeadline] = useState(initial?.deadline || '');
+  const [deadline, setDeadline] = useState(initialDeadlineValue(initial?.deadline));
   const [linked, setLinked] = useState(initial?.linked || []);
+
+  const insight = goalInsight(target, monthly, deadline);
 
   const toggleCategory = (catId) =>
     setLinked((prev) => (prev.includes(catId) ? prev.filter((c) => c !== catId) : [...prev, catId]));
@@ -26,7 +37,7 @@ export default function AddGoalModal({ onClose, onSave, onDelete, initial }) {
         target: parseFloat(target),
         saved: initial?.saved ?? 0,
         monthly: monthly ? parseFloat(monthly) : 0,
-        deadline,
+        deadline: parseMonthYear(deadline) ? fmtMonth(parseMonthYear(deadline)) : '',
         linked,
       });
     }
@@ -86,13 +97,27 @@ export default function AddGoalModal({ onClose, onSave, onDelete, initial }) {
 
           <div>
             <label className="block text-sm font-medium text-[#374151] mb-1.5">Deadline</label>
-            <input
-              type="text"
-              placeholder="Dec 2024"
+            <MonthYearPicker
               value={deadline}
-              onChange={(e) => setDeadline(e.target.value)}
-              className={inputClass}
+              onChange={setDeadline}
+              min={today}
+              placeholder="Select month"
+              className={`${inputClass} text-left`}
             />
+            {insight && (
+              <p
+                className={`mt-2 text-xs flex items-start gap-1.5 ${
+                  insight.tone === 'ok' ? 'text-[#15803D]' : 'text-[#B45309]'
+                }`}
+              >
+                {insight.tone === 'ok' ? (
+                  <Check size={13} className="mt-px flex-shrink-0" />
+                ) : (
+                  <AlertTriangle size={13} className="mt-px flex-shrink-0" />
+                )}
+                {insight.text}
+              </p>
+            )}
           </div>
 
           <div>
@@ -141,7 +166,7 @@ export default function AddGoalModal({ onClose, onSave, onDelete, initial }) {
           <button
             onClick={handleSave}
             disabled={!name || !target}
-            className="px-6 py-2.5 bg-[#15803D] text-white text-sm font-medium rounded-lg hover:bg-[#136a34] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            className="px-6 py-2.5 bg-[#0E3F2E] text-white text-sm font-medium rounded-lg hover:bg-[#0a3122] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
             {isEdit ? 'Save changes' : 'Done'}
           </button>

@@ -4,7 +4,7 @@ import BrandLogo from '../BrandLogo';
 import { bankBrand } from '../../lib/logos';
 import AddBankModal from '../modals/AddBankModal';
 
-export default function StepAccountSelect({ accounts, selected, onToggle, onContinue, onBack, onAddAnother }) {
+export default function StepAccountSelect({ accounts, selected, onToggle, onContinue, onSkip, onBack, onAddAnother }) {
   const [showAdd, setShowAdd] = useState(false);
   const selectedCount = selected.filter(Boolean).length;
 
@@ -77,7 +77,7 @@ export default function StepAccountSelect({ accounts, selected, onToggle, onCont
         </button>
         <div className="flex items-center gap-3">
           <button
-            onClick={onContinue}
+            onClick={onSkip}
             className="px-5 py-2.5 bg-white border border-[#e5e7eb] text-[#374151] text-sm font-medium rounded-lg hover:bg-[#f9fafb] transition-colors"
           >
             Skip
