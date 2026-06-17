@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Shield, LogOut, Plus } from 'lucide-react';
 import BrandLogo from '../BrandLogo';
 import { bankBrand } from '../../lib/logos';
+import { groupINR, digitsOnly } from '../../lib/utils';
 import AddBankModal from '../modals/AddBankModal';
 
 function Toggle({ checked, onChange }) {
@@ -42,6 +43,7 @@ export default function Settings({
   transactions,
   setTransactions,
   onLogout,
+  startInEdit = false,
 }) {
   const [showAddBank, setShowAddBank] = useState(false);
   const handleAddBank = (data) => {
@@ -55,7 +57,8 @@ export default function Settings({
     mobile: '+91 7346432221',
     city: '',
   });
-  const [editingProfile, setEditingProfile] = useState(false);
+  // Open straight into edit mode when launched from the dashboard income/budget prompt.
+  const [editingProfile, setEditingProfile] = useState(startInEdit);
   const [draft, setDraft] = useState({ ...profile, income: income > 0 ? String(income) : '', budget: budget > 0 ? String(budget) : '' });
 
   const startEdit = () => {
@@ -195,9 +198,10 @@ export default function Settings({
                     <div className="flex items-center border border-[#e5e7eb] rounded-lg overflow-hidden focus-within:border-[#0E3F2E]">
                       <span className="pl-3.5 text-[#9ca3af] text-sm">₹</span>
                       <input
-                        type="number"
-                        value={draft.income}
-                        onChange={(e) => setDraft((d) => ({ ...d, income: e.target.value }))}
+                        type="text"
+                        inputMode="numeric"
+                        value={groupINR(draft.income)}
+                        onChange={(e) => setDraft((d) => ({ ...d, income: digitsOnly(e.target.value) }))}
                         className="flex-1 px-2 py-2.5 text-sm text-[#111827] outline-none bg-white"
                       />
                     </div>
@@ -207,9 +211,10 @@ export default function Settings({
                     <div className="flex items-center border border-[#e5e7eb] rounded-lg overflow-hidden focus-within:border-[#0E3F2E]">
                       <span className="pl-3.5 text-[#9ca3af] text-sm">₹</span>
                       <input
-                        type="number"
-                        value={draft.budget}
-                        onChange={(e) => setDraft((d) => ({ ...d, budget: e.target.value }))}
+                        type="text"
+                        inputMode="numeric"
+                        value={groupINR(draft.budget)}
+                        onChange={(e) => setDraft((d) => ({ ...d, budget: digitsOnly(e.target.value) }))}
                         className="flex-1 px-2 py-2.5 text-sm text-[#111827] outline-none bg-white"
                       />
                     </div>

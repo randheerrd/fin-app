@@ -1,4 +1,5 @@
-import { Link, ArrowUp } from 'lucide-react';
+import { Link, ArrowUp, Sparkles } from 'lucide-react';
+import EmptyState from '../EmptyState';
 import CategoryIcon from '../CategoryIcon';
 
 const fmt = (n) => `₹${Math.round(n).toLocaleString('en-IN')}`;
@@ -53,10 +54,11 @@ export default function Insights({ transactions, manualMode, onLinkBank }) {
     return (
       <div className="min-h-full bg-white px-8 py-7">
         <p className="font-display text-4xl text-[#111827] mb-6">Insights</p>
-        <div className="border border-[#ECEEF0] rounded-2xl shadow-[0_1px_2px_rgba(16,24,40,0.04)] p-12 text-center">
-          <p className="text-[#6b7280] text-sm mb-5">
-            Insights need a little history. Log expenses for about a week and patterns appear here.
-          </p>
+        <EmptyState
+          icon={Sparkles}
+          title="Insights are warming up"
+          subtitle="Log expenses for about a week — or link a bank — and your spending patterns will start to appear here."
+        >
           {manualMode && (
             <button
               onClick={onLinkBank}
@@ -66,7 +68,7 @@ export default function Insights({ transactions, manualMode, onLinkBank }) {
               Connect your bank — 6 months of history from day one
             </button>
           )}
-        </div>
+        </EmptyState>
       </div>
     );
   }

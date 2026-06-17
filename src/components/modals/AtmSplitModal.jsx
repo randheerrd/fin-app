@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { X } from 'lucide-react';
+import { groupINR, digitsOnly } from '../../lib/utils';
 
 export default function AtmSplitModal({ atmRemaining, onClose, onAddSplit }) {
   const [amount, setAmount] = useState('');
@@ -35,11 +36,11 @@ export default function AtmSplitModal({ atmRemaining, onClose, onAddSplit }) {
               <span className="pl-4 text-[#9ca3af] text-sm">₹</span>
               <input
                 autoFocus
-                type="number"
+                type="text"
+                inputMode="numeric"
                 placeholder="0"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                max={atmRemaining}
+                value={groupINR(amount)}
+                onChange={(e) => setAmount(digitsOnly(e.target.value))}
                 className="flex-1 px-2 py-2.5 text-[#111827] text-sm outline-none"
               />
             </div>

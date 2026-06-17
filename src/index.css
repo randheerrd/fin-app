@@ -7,6 +7,12 @@ html, body, #root {
   height: 100%;
 }
 
+/* Firefox: thin, floating scrollbar (no track strip) */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #d1d5db transparent;
+}
+
 body {
   background-color: #ffffff;
   color: #111827;
@@ -16,19 +22,22 @@ body {
   letter-spacing: -0.011em;
 }
 
-/* Scrollbar */
+/* Scrollbar — thin, transparent track, floating thumb so it doesn't show a
+   grey strip clipped by the rounded content card. */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 10px;
+  height: 10px;
 }
 
 ::-webkit-scrollbar-track {
-  background-color: #f3f4f6;
+  background-color: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
   background-color: #d1d5db;
-  border-radius: 3px;
+  border-radius: 9999px;
+  border: 3px solid transparent;
+  background-clip: padding-box;
 }
 
 ::-webkit-scrollbar-thumb:hover {

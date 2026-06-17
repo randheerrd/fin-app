@@ -127,11 +127,11 @@ export default function AddBankModal({ onClose, onAdd }) {
           <div>
             <label className="block text-sm font-medium text-[#374151] mb-1.5">Account number</label>
             <input
-              value={acctNo}
-              onChange={(e) => setAcctNo(e.target.value.replace(/[^\d]/g, '').slice(0, 18))}
+              value={acctNo.replace(/(.{4})(?=.)/g, '$1 ')}
+              onChange={(e) => setAcctNo(e.target.value.replace(/\D/g, '').slice(0, 18))}
               inputMode="numeric"
-              placeholder="Enter account number"
-              className="w-full px-4 py-3 border border-[#e5e7eb] rounded-lg text-sm text-[#111827] outline-none focus:border-[#0E3F2E] placeholder:text-[#9ca3af]"
+              placeholder="0000 0000 0000 0000"
+              className="w-full px-4 py-3 border border-[#e5e7eb] rounded-lg text-sm text-[#111827] tracking-wide tabular-nums outline-none focus:border-[#0E3F2E] placeholder:text-[#9ca3af]"
             />
             <p className="text-xs text-[#9ca3af] mt-1">Only the last 4 digits are stored.</p>
           </div>

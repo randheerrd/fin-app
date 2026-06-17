@@ -1,11 +1,11 @@
-import { Search, Home, MessageSquare, LayoutGrid, Bookmark, ChevronsUpDown } from 'lucide-react';
+import { Search, Home, CreditCard, Target, Sparkles, ChevronsUpDown } from 'lucide-react';
 import FinAppLogo from './FinAppLogo';
 
 const NAV_ITEMS = [
   { id: 'dashboard', label: 'Dashboard', icon: Home },
-  { id: 'spend', label: 'Spend', icon: MessageSquare },
-  { id: 'goals', label: 'Goals', icon: LayoutGrid },
-  { id: 'insights', label: 'Insights', icon: Bookmark },
+  { id: 'spend', label: 'Spend', icon: CreditCard },
+  { id: 'goals', label: 'Goals', icon: Target },
+  { id: 'insights', label: 'Insights', icon: Sparkles },
 ];
 
 export default function Sidebar({ activeView, setActiveView, onSearch }) {

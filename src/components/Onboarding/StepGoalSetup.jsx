@@ -3,6 +3,7 @@ import { ArrowLeft, ArrowRight, Plus, Check, AlertTriangle } from 'lucide-react'
 import { CATEGORIES } from '../../data/categories';
 import MonthYearPicker from '../MonthYearPicker';
 import { parseMonthYear, fmtMonth, goalInsight } from '../../lib/goalMath';
+import { groupINR, digitsOnly } from '../../lib/utils';
 
 export default function StepGoalSetup({ onAction }) {
   const [name, setName] = useState('');
@@ -59,9 +60,10 @@ export default function StepGoalSetup({ onAction }) {
             <div className="flex items-center border border-[#e5e7eb] rounded-lg overflow-hidden focus-within:border-[#0E3F2E]">
               <span className="pl-3.5 text-[#9ca3af] text-sm">₹</span>
               <input
-                type="number"
-                value={target}
-                onChange={(e) => setTarget(e.target.value)}
+                type="text"
+                inputMode="numeric"
+                value={groupINR(target)}
+                onChange={(e) => setTarget(digitsOnly(e.target.value))}
                 placeholder="60,000"
                 className="flex-1 px-2 py-3 text-sm text-[#111827] outline-none"
               />
@@ -72,9 +74,10 @@ export default function StepGoalSetup({ onAction }) {
             <div className="flex items-center border border-[#e5e7eb] rounded-lg overflow-hidden focus-within:border-[#0E3F2E]">
               <span className="pl-3.5 text-[#9ca3af] text-sm">₹</span>
               <input
-                type="number"
-                value={monthly}
-                onChange={(e) => setMonthly(e.target.value)}
+                type="text"
+                inputMode="numeric"
+                value={groupINR(monthly)}
+                onChange={(e) => setMonthly(digitsOnly(e.target.value))}
                 placeholder="6,000"
                 className="flex-1 px-2 py-3 text-sm text-[#111827] outline-none"
               />

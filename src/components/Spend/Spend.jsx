@@ -1,9 +1,11 @@
 import { useState } from 'react';
-import { Plus, ChevronDown, Calendar, ArrowDown, X } from 'lucide-react';
+import { Plus, Calendar, ArrowDown, ArrowUp, ChevronsUpDown, X, RotateCcw, CreditCard } from 'lucide-react';
 import { CATEGORIES, getCategoryChip } from '../../data/categories';
 import DuplicateBanner from './DuplicateBanner';
 import MerchantLogo from '../MerchantLogo';
 import CategoryIcon from '../CategoryIcon';
+import Dropdown from '../Dropdown';
+import EmptyState from '../EmptyState';
 import AddExpenseModal from '../modals/AddExpenseModal';
 
 const catName = (id) => CATEGORIES.find((c) => c.id === id)?.name || 'Other';
@@ -23,43 +25,29 @@ function sourceLabel(txn) {
   return BANKS[h];
 }
 
-function Dropdown({ label, value, options, onChange, leading }) {
-  const [open, setOpen] = useState(false);
+// Clickable, sortable table-header cell.
+function SortHeader({ label, col, activeKey, dir, onSort, align = 'left' }) {
+  const active = activeKey === col;
   return (
-    <div className="relative">
+    <th
+      className={`px-6 py-4 text-[11px] font-medium text-[#9ca3af] uppercase tracking-wide ${
+        align === 'right' ? 'text-right' : 'text-left'
+      }`}
+    >
       <button
-        onClick={() => setOpen((o) => !o)}
-        className="flex items-center gap-2 px-3.5 py-2 border border-[#e5e7eb] rounded-lg text-sm text-[#374151] hover:bg-[#f9fafb] transition-colors"
+        onClick={() => onSort(col)}
+        className={`inline-flex items-center gap-1 uppercase tracking-wide hover:text-[#374151] transition-colors ${
+          active ? 'text-[#374151]' : ''
+        } ${align === 'right' ? 'flex-row-reverse' : ''}`}
       >
-        {leading}
-        <span className="font-medium">
-          {label ? `${label}: ` : ''}
-          {value}
-        </span>
-        <ChevronDown size={15} className="text-[#9ca3af]" />
+        {label}
+        {active ? (
+          dir === 'asc' ? <ArrowUp size={12} /> : <ArrowDown size={12} />
+        ) : (
+          <ChevronsUpDown size={12} className="opacity-40" />
+        )}
       </button>
-      {open && (
-        <>
-          <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
-          <div className="absolute left-0 mt-1 z-20 bg-white border border-[#e5e7eb] rounded-lg shadow-lg py-1 min-w-[160px] max-h-64 overflow-auto">
-            {options.map((opt) => (
-              <button
-                key={opt.value}
-                onClick={() => {
-                  onChange(opt.value);
-                  setOpen(false);
-                }}
-                className={`w-full text-left px-3.5 py-2 text-sm hover:bg-[#f9fafb] ${
-                  value === opt.label ? 'text-[#0E3F2E] font-medium' : 'text-[#374151]'
-                }`}
-              >
-                {opt.label}
-              </button>
-            ))}
-          </div>
-        </>
-      )}
-    </div>
+    </th>
   );
 }
 
@@ -77,11 +65,46 @@ export default function Spend({
   const [source, setSource] = useState('all');
   const [range, setRange] = useState('all');
   const [period, setPeriod] = useState('month');
+  const [merchant, setMerchant] = useState('all');
+  const [sortKey, setSortKey] = useState('date');
+  const [sortDir, setSortDir] = useState('desc');
   const [editing, setEditing] = useState(null);
 
-  const sorted = [...transactions].sort((a, b) => new Date(b.date) - new Date(a.date));
-  const usedCats = [...new Set(sorted.map((t) => t.category))];
-  const dup = sorted.find((t) => t.dup);
+  const usedCats = [...new Set(transactions.map((t) => t.category))];
+  const usedMerchants = [...new Set(transactions.map((t) => t.merchant))].sort((a, b) => a.localeCompare(b));
+  const dup = transactions.find((t) => t.dup);
+
+  // Click a header to sort by it; click again to flip direction.
+  const toggleSort = (key) => {
+    if (sortKey === key) {
+      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortKey(key);
+      setSortDir(key === 'date' || key === 'amount' ? 'desc' : 'asc');
+    }
+  };
+
+  const compare = (a, b) => {
+    let r = 0;
+    if (sortKey === 'date') r = new Date(a.date) - new Date(b.date);
+    else if (sortKey === 'amount') r = a.amount - b.amount;
+    else if (sortKey === 'merchant') r = a.merchant.localeCompare(b.merchant);
+    else if (sortKey === 'category') r = catName(a.category).localeCompare(catName(b.category));
+    else if (sortKey === 'source') r = sourceLabel(a).localeCompare(sourceLabel(b));
+    return sortDir === 'asc' ? r : -r;
+  };
+
+  const filtersActive =
+    category !== 'all' || source !== 'all' || range !== 'all' || period !== 'month' || merchant !== 'all' || !!searchQuery;
+
+  const resetFilters = () => {
+    setCategory('all');
+    setSource('all');
+    setRange('all');
+    setPeriod('month');
+    setMerchant('all');
+    onClearSearch?.();
+  };
 
   const inPeriod = (dateStr) => {
     if (period === 'all') return true;
@@ -108,26 +131,32 @@ export default function Spend({
   };
 
   const search = searchQuery.trim().toLowerCase();
-  const filtered = sorted.filter((t) => {
-    if (search && !t.merchant.toLowerCase().includes(search) && !catName(t.category).toLowerCase().includes(search))
-      return false;
-    if (category !== 'all' && t.category !== category) return false;
-    if (source === 'manual' && t.source !== 'manual') return false;
-    if (source === 'bank' && t.source !== 'bank') return false;
-    if (!inRange(t.amount)) return false;
-    if (!inPeriod(t.date)) return false;
-    return true;
-  });
+  const filtered = transactions
+    .filter((t) => {
+      if (search && !t.merchant.toLowerCase().includes(search) && !catName(t.category).toLowerCase().includes(search))
+        return false;
+      if (merchant !== 'all' && t.merchant !== merchant) return false;
+      if (category !== 'all' && t.category !== category) return false;
+      if (source === 'manual' && t.source !== 'manual') return false;
+      if (source === 'bank' && t.source !== 'bank') return false;
+      if (!inRange(t.amount)) return false;
+      if (!inPeriod(t.date)) return false;
+      return true;
+    })
+    .sort(compare);
 
   const rangeLabel = { all: 'All', lt500: 'Under ₹500', mid: '₹500 – ₹2,000', gt2000: 'Over ₹2,000' }[range];
   const periodLabel = { month: 'This Month', lastmonth: 'Last Month', '3m': 'Last 3 Months', all: 'All Time' }[period];
 
-  if (sorted.length === 0) {
+  if (transactions.length === 0) {
     return (
       <div className="min-h-full bg-white px-8 py-7">
-        <p className="font-display text-4xl text-[#111827] mb-6">Transactions</p>
-        <div className="border border-[#f3f4f6] rounded-xl p-12 text-center">
-          <p className="text-[#9ca3af] text-sm mb-5">No expenses yet</p>
+        <p className="font-display text-4xl text-[#111827] mb-6">Spend</p>
+        <EmptyState
+          icon={CreditCard}
+          title="No expenses yet"
+          subtitle="Add an expense or link a bank — they'll show up here, auto-categorised and ready to track."
+        >
           <button
             onClick={onAddExpense}
             className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#0E3F2E] text-white text-sm font-medium rounded-lg hover:bg-[#0a3122] transition-colors"
@@ -135,7 +164,7 @@ export default function Spend({
             <Plus size={16} />
             Add your first expense
           </button>
-        </div>
+        </EmptyState>
       </div>
     );
   }
@@ -143,7 +172,7 @@ export default function Spend({
   return (
     <div className="min-h-full bg-white px-8 py-7">
       <div className="flex items-center justify-between mb-6">
-        <p className="font-display text-4xl text-[#111827]">Transactions</p>
+        <p className="font-display text-4xl text-[#111827]">Spend</p>
         <button
           onClick={onAddExpense}
           className="flex items-center gap-2 px-4 py-2.5 bg-[#0E3F2E] text-white text-sm font-medium rounded-lg hover:bg-[#0a3122] transition-colors"
@@ -207,19 +236,39 @@ export default function Spend({
             ]}
             onChange={setRange}
           />
+          <Dropdown
+            label="Merchant"
+            value={merchant === 'all' ? 'All' : merchant}
+            options={[
+              { label: 'All', value: 'all' },
+              ...usedMerchants.map((m) => ({ label: m, value: m })),
+            ]}
+            onChange={setMerchant}
+          />
         </div>
-        <Dropdown
-          label=""
-          leading={<Calendar size={15} className="text-[#9ca3af]" />}
-          value={periodLabel}
-          options={[
-            { label: 'This Month', value: 'month' },
-            { label: 'Last Month', value: 'lastmonth' },
-            { label: 'Last 3 Months', value: '3m' },
-            { label: 'All Time', value: 'all' },
-          ]}
-          onChange={setPeriod}
-        />
+        <div className="flex items-center gap-3">
+          {filtersActive && (
+            <button
+              onClick={resetFilters}
+              className="flex items-center gap-1.5 px-3 py-2 text-sm text-[#6b7280] hover:text-[#111827] transition-colors"
+            >
+              <RotateCcw size={14} />
+              Reset
+            </button>
+          )}
+          <Dropdown
+            label=""
+            leading={<Calendar size={15} className="text-[#9ca3af]" />}
+            value={periodLabel}
+            options={[
+              { label: 'This Month', value: 'month' },
+              { label: 'Last Month', value: 'lastmonth' },
+              { label: 'Last 3 Months', value: '3m' },
+              { label: 'All Time', value: 'all' },
+            ]}
+            onChange={setPeriod}
+          />
+        </div>
       </div>
 
       {/* Table */}
@@ -227,15 +276,11 @@ export default function Spend({
         <table className="w-full">
           <thead>
             <tr className="border-b border-[#f3f4f6]">
-              <th className="px-6 py-4 text-left text-[11px] font-medium text-[#9ca3af] uppercase tracking-wide">
-                <span className="inline-flex items-center gap-1">
-                  Date <ArrowDown size={12} />
-                </span>
-              </th>
-              <th className="px-6 py-4 text-left text-[11px] font-medium text-[#9ca3af] uppercase tracking-wide">Merchant</th>
-              <th className="px-6 py-4 text-left text-[11px] font-medium text-[#9ca3af] uppercase tracking-wide">Category</th>
-              <th className="px-6 py-4 text-left text-[11px] font-medium text-[#9ca3af] uppercase tracking-wide">Source</th>
-              <th className="px-6 py-4 text-right text-[11px] font-medium text-[#9ca3af] uppercase tracking-wide">Amount</th>
+              <SortHeader label="Date" col="date" activeKey={sortKey} dir={sortDir} onSort={toggleSort} />
+              <SortHeader label="Merchant" col="merchant" activeKey={sortKey} dir={sortDir} onSort={toggleSort} />
+              <SortHeader label="Category" col="category" activeKey={sortKey} dir={sortDir} onSort={toggleSort} />
+              <SortHeader label="Source" col="source" activeKey={sortKey} dir={sortDir} onSort={toggleSort} />
+              <SortHeader label="Amount" col="amount" activeKey={sortKey} dir={sortDir} onSort={toggleSort} align="right" />
               <th className="px-6 py-4" />
             </tr>
           </thead>

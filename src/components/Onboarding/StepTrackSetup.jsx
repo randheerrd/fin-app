@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
+import { groupINR, digitsOnly } from '../../lib/utils';
 
 export default function StepTrackSetup({ onAction }) {
   const [income, setIncome] = useState('');
@@ -24,9 +25,10 @@ export default function StepTrackSetup({ onAction }) {
           <label className="block text-sm font-medium text-[#374151] mb-1.5">Monthly Income</label>
           <input
             type="text"
+            inputMode="numeric"
             placeholder="1,00,000"
-            value={income}
-            onChange={(e) => setIncome(e.target.value.replace(/[^\d,]/g, ''))}
+            value={groupINR(income)}
+            onChange={(e) => setIncome(digitsOnly(e.target.value))}
             className="w-full px-4 py-2.5 border border-[#e5e7eb] rounded-lg text-[#111827] text-sm placeholder-[#9ca3af] focus:border-[#0E3F2E] focus:ring-1 focus:ring-[#0E3F2E]/20 transition-colors"
           />
         </div>
@@ -35,9 +37,10 @@ export default function StepTrackSetup({ onAction }) {
           <label className="block text-sm font-medium text-[#374151] mb-1.5">Monthly Budget</label>
           <input
             type="text"
+            inputMode="numeric"
             placeholder="50,000"
-            value={budget}
-            onChange={(e) => setBudget(e.target.value.replace(/[^\d,]/g, ''))}
+            value={groupINR(budget)}
+            onChange={(e) => setBudget(digitsOnly(e.target.value))}
             className="w-full px-4 py-2.5 border border-[#e5e7eb] rounded-lg text-[#111827] text-sm placeholder-[#9ca3af] focus:border-[#0E3F2E] focus:ring-1 focus:ring-[#0E3F2E]/20 transition-colors"
           />
         </div>

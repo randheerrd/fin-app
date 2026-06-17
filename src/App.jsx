@@ -53,6 +53,7 @@ function App() {
   const [activeView, setActiveView] = useState('dashboard');
   const [activeFilter] = useState(null);
   const [spendSearch, setSpendSearch] = useState(''); // merchant text from global search → filters Spend
+  const [settingsEdit, setSettingsEdit] = useState(false); // open Settings straight into edit mode
   const [sipDismissed, setSipDismissed] = useState(false);
 
   // Modal state
@@ -424,7 +425,10 @@ function App() {
               setSpendSearch('');
               setActiveView('spend');
             }}
-            onSetupBudget={() => setActiveView('settings')}
+            onSetupBudget={() => {
+              setSettingsEdit(true);
+              setActiveView('settings');
+            }}
           />
         );
       case 'spend':
@@ -489,6 +493,7 @@ function App() {
             manualMode={manualMode}
             onLinkBank={handleLinkBankFromSettings}
             onLogout={firebaseEnabled ? handleLogout : null}
+            startInEdit={settingsEdit}
           />
         );
       default:
@@ -530,6 +535,7 @@ function App() {
           activeView={activeView}
           setActiveView={(v) => {
             setSpendSearch('');
+            setSettingsEdit(false);
             setActiveView(v);
           }}
           onAddExpense={() => setShowAddExpense(true)}
@@ -541,7 +547,7 @@ function App() {
       {onboardingDone ? (
         <div className="flex-1 ml-56 overflow-hidden p-1">
           <div className="h-full bg-white rounded-2xl overflow-hidden">
-            <div ref={mainContentRef} className="h-full overflow-y-auto">
+            <div ref={mainContentRef} className="h-full overflow-y-auto overscroll-contain [scrollbar-gutter:stable]">
               {renderView()}
             </div>
           </div>

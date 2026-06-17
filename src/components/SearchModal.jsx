@@ -6,9 +6,9 @@ import {
   CornerDownLeft,
   Plus,
   Home,
-  MessageSquare,
-  LayoutGrid,
-  Bookmark,
+  CreditCard,
+  Target,
+  Sparkles,
   Settings as SettingsIcon,
 } from 'lucide-react';
 import { CATEGORIES } from '../data/categories';
@@ -19,9 +19,9 @@ const fmt = (n) => `₹${Math.round(n).toLocaleString('en-IN')}`;
 
 const PAGES = [
   { id: 'dashboard', label: 'Dashboard', icon: Home },
-  { id: 'spend', label: 'Spend', icon: MessageSquare },
-  { id: 'goals', label: 'Goals', icon: LayoutGrid },
-  { id: 'insights', label: 'Insights', icon: Bookmark },
+  { id: 'spend', label: 'Spend', icon: CreditCard },
+  { id: 'goals', label: 'Goals', icon: Target },
+  { id: 'insights', label: 'Insights', icon: Sparkles },
   { id: 'settings', label: 'Settings', icon: SettingsIcon },
 ];
 

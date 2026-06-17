@@ -13,37 +13,62 @@ export const DEMO_CODES = {
 export const isDemoPhone = (p = '') => Object.prototype.hasOwnProperty.call(DEMO_CODES, p);
 export const demoCode = (p = '') => DEMO_CODES[p];
 
+// `weight` biases how often a merchant shows up (everyday spends are common,
+// big-ticket shopping is rarer) so the generated history feels realistic.
 const MERCHANTS = [
-  { name: 'Swiggy', category: 'food', min: 180, max: 720 },
-  { name: 'Zomato', category: 'food', min: 160, max: 680 },
-  { name: "Domino's", category: 'food', min: 250, max: 900 },
-  { name: 'Starbucks', category: 'food', min: 300, max: 600 },
-  { name: 'Uber', category: 'transport', min: 90, max: 450 },
-  { name: 'Ola', category: 'transport', min: 80, max: 400 },
-  { name: 'Rapido', category: 'transport', min: 40, max: 160 },
-  { name: 'Indian Oil', category: 'transport', min: 800, max: 2500 },
-  { name: 'Amazon', category: 'shopping', min: 400, max: 4500 },
-  { name: 'Myntra', category: 'shopping', min: 600, max: 3500 },
-  { name: 'Flipkart', category: 'shopping', min: 500, max: 4000 },
-  { name: 'Blinkit', category: 'groceries', min: 200, max: 1400 },
-  { name: 'Zepto', category: 'groceries', min: 180, max: 1200 },
-  { name: 'BigBasket', category: 'groceries', min: 800, max: 3200 },
-  { name: 'Swiggy Instamart', category: 'groceries', min: 250, max: 1500 },
-  { name: 'Apollo Pharmacy', category: 'health', min: 200, max: 1800 },
-  { name: 'Practo', category: 'health', min: 400, max: 1200 },
-  { name: 'BookMyShow', category: 'entertainment', min: 300, max: 1200 },
-  { name: 'PVR Cinemas', category: 'entertainment', min: 400, max: 1600 },
+  // Food & dining (frequent)
+  { name: 'Swiggy', category: 'food', min: 180, max: 720, weight: 9 },
+  { name: 'Zomato', category: 'food', min: 160, max: 680, weight: 8 },
+  { name: "Domino's", category: 'food', min: 250, max: 900, weight: 4 },
+  { name: 'Starbucks', category: 'food', min: 280, max: 620, weight: 4 },
+  { name: "McDonald's", category: 'food', min: 200, max: 650, weight: 3 },
+  { name: 'KFC', category: 'food', min: 300, max: 850, weight: 2 },
+  { name: 'Chaayos', category: 'food', min: 120, max: 480, weight: 4 },
+  { name: 'Third Wave Coffee', category: 'food', min: 250, max: 550, weight: 3 },
+  // Transport & fuel
+  { name: 'Uber', category: 'transport', min: 90, max: 450, weight: 7 },
+  { name: 'Ola', category: 'transport', min: 80, max: 400, weight: 5 },
+  { name: 'Rapido', category: 'transport', min: 40, max: 160, weight: 6 },
+  { name: 'Indian Oil', category: 'transport', min: 800, max: 2500, weight: 2 },
+  { name: 'IRCTC', category: 'transport', min: 350, max: 2200, weight: 1 },
+  // Groceries
+  { name: 'Blinkit', category: 'groceries', min: 200, max: 1400, weight: 7 },
+  { name: 'Zepto', category: 'groceries', min: 180, max: 1200, weight: 6 },
+  { name: 'Swiggy Instamart', category: 'groceries', min: 250, max: 1500, weight: 5 },
+  { name: 'BigBasket', category: 'groceries', min: 800, max: 3200, weight: 2 },
+  { name: 'DMart', category: 'groceries', min: 900, max: 3800, weight: 2 },
+  // Shopping (rarer, bigger)
+  { name: 'Amazon', category: 'shopping', min: 400, max: 4500, weight: 4 },
+  { name: 'Flipkart', category: 'shopping', min: 500, max: 4000, weight: 3 },
+  { name: 'Myntra', category: 'shopping', min: 600, max: 3500, weight: 3 },
+  { name: 'Ajio', category: 'shopping', min: 700, max: 3200, weight: 2 },
+  { name: 'Nike', category: 'shopping', min: 1500, max: 8000, weight: 1 },
+  { name: 'Decathlon', category: 'shopping', min: 600, max: 4500, weight: 1 },
+  // Health
+  { name: 'Apollo Pharmacy', category: 'health', min: 200, max: 1800, weight: 3 },
+  { name: '1mg', category: 'health', min: 250, max: 1600, weight: 2 },
+  { name: 'Pharmeasy', category: 'health', min: 200, max: 1400, weight: 2 },
+  { name: 'Practo', category: 'health', min: 400, max: 1200, weight: 1 },
+  // Entertainment
+  { name: 'BookMyShow', category: 'entertainment', min: 300, max: 1200, weight: 3 },
+  { name: 'PVR Cinemas', category: 'entertainment', min: 400, max: 1600, weight: 2 },
 ];
 
 const RECURRING = [
-  { name: 'Rent', category: 'rent', amount: 25000, day: 1 },
+  { name: 'Rent', category: 'rent', amount: 28000, day: 1 },
   { name: 'Car EMI', category: 'emi', amount: 12400, day: 5 },
-  { name: 'SIP Index fund', category: 'emi', amount: 10000, day: 3 },
+  { name: 'SIP Index Fund', category: 'emi', amount: 10000, day: 3 },
   { name: 'Netflix', category: 'subscriptions', amount: 649, day: 12 },
   { name: 'Spotify', category: 'subscriptions', amount: 119, day: 8 },
-  { name: 'Gym', category: 'health', amount: 2000, day: 1 },
-  { name: 'Electricity Bill', category: 'utilities', amount: 1850, day: 18 },
+  { name: 'Hotstar', category: 'subscriptions', amount: 299, day: 15 },
+  { name: 'Cult.fit', category: 'health', amount: 2200, day: 2 },
+  { name: 'Jio Recharge', category: 'utilities', amount: 399, day: 22 },
+  { name: 'Airtel Postpaid', category: 'utilities', amount: 799, day: 14 },
+  { name: 'Tata Power', category: 'utilities', amount: 1850, day: 18 },
 ];
+
+// Flatten the weighted merchant list into a pool for cheap weighted picks.
+const MERCHANT_POOL = MERCHANTS.flatMap((m) => Array(m.weight).fill(m));
 
 export function generateDemoTransactions(months = 6) {
   const txns = [];
@@ -56,13 +81,15 @@ export function generateDemoTransactions(months = 6) {
   };
   const iso = (d) => d.toISOString().slice(0, 10);
 
-  // Daily discretionary spend
+  // Daily discretionary spend — busier on weekends, weighted toward everyday spends.
   for (let d = 0; d < months * 30; d++) {
     const date = new Date(today);
     date.setDate(today.getDate() - d);
-    const count = Math.floor(rand() * 3); // 0–2 txns/day
+    const weekend = date.getDay() === 0 || date.getDay() === 6;
+    // 1–3 txns on weekdays, 2–4 on weekends.
+    const count = (weekend ? 2 : 1) + Math.floor(rand() * 3);
     for (let i = 0; i < count; i++) {
-      const m = MERCHANTS[Math.floor(rand() * MERCHANTS.length)];
+      const m = MERCHANT_POOL[Math.floor(rand() * MERCHANT_POOL.length)];
       txns.push({
         id: crypto.randomUUID(),
         date: iso(date),

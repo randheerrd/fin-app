@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ChevronRight, ChevronDown, Plus } from 'lucide-react';
+import { ChevronRight, Plus, Calendar } from 'lucide-react';
 import {
   getTotalSpent,
   getTopCategories,
@@ -10,6 +10,26 @@ import {
 import { CATEGORIES, CHART_PALETTE, getCategoryChip } from '../../data/categories';
 import MerchantLogo from '../MerchantLogo';
 import CategoryIcon from '../CategoryIcon';
+import Dropdown from '../Dropdown';
+
+// Keep transactions within the selected period (mirrors the Spend tab).
+const inPeriod = (dateStr, period) => {
+  if (period === 'all') return true;
+  const d = new Date(dateStr);
+  const now = new Date();
+  if (period === 'month') return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+  if (period === 'lastmonth') {
+    const lm = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    return d.getMonth() === lm.getMonth() && d.getFullYear() === lm.getFullYear();
+  }
+  if (period === '3m') {
+    const cut = new Date(now);
+    cut.setMonth(cut.getMonth() - 3);
+    return d >= cut;
+  }
+  return true;
+};
+const PERIOD_LABEL = { month: 'This Month', lastmonth: 'Last Month', '3m': 'Last 3 Months', all: 'All Time' };
 
 const fmt = (n) => `₹${Math.round(n).toLocaleString('en-IN')}`;
 const catName = (id) => CATEGORIES.find((c) => c.id === id)?.name || 'Other';
@@ -164,9 +184,12 @@ export default function Dashboard({
   onSetupBudget,
 }) {
   const [activeSeg, setActiveSeg] = useState(null);
+  const [period, setPeriod] = useState('month');
   const budgetSet = budget > 0;
-  const totalSpent = getTotalSpent(transactions, atmRemaining);
-  const topCategories = getTopCategories(transactions, 3);
+  const periodTxns = transactions.filter((t) => inPeriod(t.date, period));
+  // ATM remainder only counts toward the current month.
+  const totalSpent = getTotalSpent(periodTxns, period === 'month' ? atmRemaining : 0);
+  const topCategories = getTopCategories(periodTxns, 3);
   const dayOfMonth = getDayOfMonth();
   const daysInMonth = getDaysInMonth();
   const daysLeft = Math.max(daysInMonth - dayOfMonth, 0);
@@ -195,7 +218,7 @@ export default function Dashboard({
   const goalProgress = totalTarget > 0 ? Math.round((totalSaved / totalTarget) * 100) : 0;
 
   // Donut data: top 4 categories + Others
-  const catTotals = getCategoryTotals(transactions);
+  const catTotals = getCategoryTotals(periodTxns);
   const sorted = Object.entries(catTotals).sort((a, b) => b[1] - a[1]);
   const donutTop = sorted.slice(0, 4);
   const othersValue = sorted.slice(4).reduce((a, [, v]) => a + v, 0);
@@ -208,8 +231,8 @@ export default function Dashboard({
   const thisMonthMax = Math.max(...topCategories.map((c) => c.amount), 1);
 
   const filteredTransactions = activeFilter
-    ? transactions.filter((t) => t.category === activeFilter)
-    : transactions;
+    ? periodTxns.filter((t) => t.category === activeFilter)
+    : periodTxns;
 
   return (
     <div className="min-h-full bg-white px-8 py-7">
@@ -219,15 +242,24 @@ export default function Dashboard({
           <p className="text-sm text-[#6b7280] mb-1">{dateLabel}</p>
           <p className="text-[40px] font-bold text-[#111827] leading-none tracking-tight">{fmt(totalSpent)}</p>
           <p className="text-sm text-[#6b7280] mt-2">
-            spent so far this month
+            {period === 'month' ? 'spent so far this month' : `spent · ${PERIOD_LABEL[period]}`}
             {topCat && <span> · Biggest spend: {catName(topCat.category)}</span>}
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <button className="flex items-center gap-2 px-3.5 py-2 border border-[#e5e7eb] rounded-lg text-sm text-[#374151] hover:bg-[#f9fafb] transition-colors">
-            This Month
-            <ChevronDown size={15} className="text-[#9ca3af]" />
-          </button>
+          <Dropdown
+            label=""
+            align="right"
+            leading={<Calendar size={15} className="text-[#9ca3af]" />}
+            value={PERIOD_LABEL[period]}
+            options={[
+              { label: 'This Month', value: 'month' },
+              { label: 'Last Month', value: 'lastmonth' },
+              { label: 'Last 3 Months', value: '3m' },
+              { label: 'All Time', value: 'all' },
+            ]}
+            onChange={setPeriod}
+          />
           <button
             onClick={onAddExpense}
             className="flex items-center gap-2 px-4 py-2.5 bg-[#0E3F2E] text-white text-sm font-medium rounded-lg hover:bg-[#0a3122] transition-colors"

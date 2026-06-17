@@ -3,6 +3,7 @@ import { X, Plus, Check, Trash2, AlertTriangle } from 'lucide-react';
 import { CATEGORIES } from '../../data/categories';
 import MonthYearPicker from '../MonthYearPicker';
 import { parseMonthYear, fmtMonth, toMonthValue, goalInsight } from '../../lib/goalMath';
+import { groupINR, digitsOnly } from '../../lib/utils';
 
 // Normalize an incoming deadline label ("Dec 2026") to the picker's "YYYY-MM".
 const initialDeadlineValue = (d) => {
@@ -76,20 +77,22 @@ export default function AddGoalModal({ onClose, onSave, onDelete, initial }) {
             <div>
               <label className="block text-sm font-medium text-[#374151] mb-1.5">Target Amount</label>
               <input
-                type="number"
-                placeholder="6,000"
-                value={target}
-                onChange={(e) => setTarget(e.target.value)}
+                type="text"
+                inputMode="numeric"
+                placeholder="60,000"
+                value={groupINR(target)}
+                onChange={(e) => setTarget(digitsOnly(e.target.value))}
                 className={inputClass}
               />
             </div>
             <div>
               <label className="block text-sm font-medium text-[#374151] mb-1.5">Monthly Amount</label>
               <input
-                type="number"
-                placeholder="1,000"
-                value={monthly}
-                onChange={(e) => setMonthly(e.target.value)}
+                type="text"
+                inputMode="numeric"
+                placeholder="6,000"
+                value={groupINR(monthly)}
+                onChange={(e) => setMonthly(digitsOnly(e.target.value))}
                 className={inputClass}
               />
             </div>

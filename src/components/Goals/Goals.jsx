@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { Plus } from 'lucide-react';
+import { Plus, Target } from 'lucide-react';
 import AddGoalModal from './AddGoalModal';
 import GoalCard from './GoalCard';
+import EmptyState from '../EmptyState';
 
 const fmt = (n) => `₹${Math.round(n).toLocaleString('en-IN')}`;
 
@@ -30,10 +31,11 @@ export default function Goals({
     return (
       <div className="min-h-full bg-white px-8 py-7">
         <p className="font-display text-4xl text-[#111827] mb-6">Goals</p>
-        <div className="border border-[#ECEEF0] rounded-2xl shadow-[0_1px_2px_rgba(16,24,40,0.04)] p-12 text-center">
-          <p className="text-[#6b7280] text-sm mb-5">
-            Goals are yours to declare — name one, and every linked rupee starts meaning something.
-          </p>
+        <EmptyState
+          icon={Target}
+          title="No goals yet"
+          subtitle="Declare a goal — name one, set a target, and every linked rupee starts meaning something."
+        >
           <button
             onClick={() => setShowAddModal(true)}
             className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#0E3F2E] text-white text-sm font-medium rounded-lg hover:bg-[#0a3122] transition-colors"
@@ -41,7 +43,7 @@ export default function Goals({
             <Plus size={16} />
             Add your first goal
           </button>
-        </div>
+        </EmptyState>
         {showAddModal && (
           <AddGoalModal onClose={() => setShowAddModal(false)} onSave={(d) => { onAddGoal(d); setShowAddModal(false); }} />
         )}

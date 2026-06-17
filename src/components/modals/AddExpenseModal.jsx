@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { X, Trash2, Check } from 'lucide-react';
 import { CATEGORIES } from '../../data/categories';
-import { getToday } from '../../lib/utils';
+import { getToday, groupINR, digitsOnly } from '../../lib/utils';
 import CategoryIcon from '../CategoryIcon';
 
 export default function AddExpenseModal({ onClose, onSave, onDelete, initial }) {
@@ -53,10 +53,11 @@ export default function AddExpenseModal({ onClose, onSave, onDelete, initial }) 
                 <span className="pl-4 pr-1 text-[#9ca3af] text-sm">₹</span>
                 <input
                   autoFocus
-                  type="number"
+                  type="text"
+                  inputMode="numeric"
                   placeholder="0"
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
+                  value={groupINR(amount)}
+                  onChange={(e) => setAmount(digitsOnly(e.target.value))}
                   className="flex-1 px-2 py-3 text-sm text-[#111827] outline-none placeholder:text-[#9ca3af]"
                 />
               </div>
@@ -128,7 +129,7 @@ export default function AddExpenseModal({ onClose, onSave, onDelete, initial }) 
           <button
             onClick={handleSave}
             disabled={!amount || parseFloat(amount) <= 0}
-            className="px-6 py-2.5 bg-[#15803D] text-white text-sm font-medium rounded-lg hover:bg-[#136a34] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            className="px-6 py-2.5 bg-[#0E3F2E] text-white text-sm font-medium rounded-lg hover:bg-[#0a3122] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
             {isEdit ? 'Save changes' : 'Done'}
           </button>
