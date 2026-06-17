@@ -26,17 +26,19 @@ export default function AddBankModal({ onClose, onAdd, holderName = 'Randheer Ku
   const [bank, setBank] = useState(null);
   const [type, setType] = useState(ACCOUNT_TYPES[0]);
   const [acctNo, setAcctNo] = useState('');
+  const [ifsc, setIfsc] = useState('');
   const [consent, setConsent] = useState(false);
 
   const list = INDIAN_BANKS.filter((b) => b.name.toLowerCase().includes(query.trim().toLowerCase()));
   const digits = acctNo.replace(/\D/g, '');
   const verified = digits.length >= 9; // enough digits to "look up" the holder
   const matched = verified && isOwnAccount(digits);
-  const canAdd = bank && verified && matched && consent;
+  const ifscValid = /^[A-Z]{4}0[A-Z0-9]{6}$/.test(ifsc); // 11 chars: BANK + 0 + branch
+  const canAdd = bank && verified && matched && ifscValid && consent;
 
   const submit = () => {
     if (!canAdd) return;
-    onAdd({ name: bank.name, type, mask: `··${digits.slice(-4)}` });
+    onAdd({ name: bank.name, type, mask: `··${digits.slice(-4)}`, ifsc });
   };
 
   return (
@@ -162,6 +164,24 @@ export default function AddBankModal({ onClose, onAdd, holderName = 'Randheer Ku
                   This account isn’t registered under {holderName}. You can only link your own accounts.
                 </p>
               </div>
+            )}
+          </div>
+
+          {/* IFSC */}
+          <div>
+            <label className="block text-sm font-medium text-[#374151] mb-1.5">IFSC code</label>
+            <input
+              value={ifsc}
+              onChange={(e) => setIfsc(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 11))}
+              placeholder="HDFC0001234"
+              className={`w-full px-4 py-3 border rounded-lg text-sm text-[#111827] tracking-wide uppercase outline-none focus:border-[#0E3F2E] placeholder:text-[#9ca3af] placeholder:normal-case ${
+                ifsc.length > 0 && !ifscValid ? 'border-red-300' : 'border-[#e5e7eb]'
+              }`}
+            />
+            {ifsc.length > 0 && !ifscValid ? (
+              <p className="text-xs text-red-500 mt-1">Enter a valid 11-character IFSC (e.g. HDFC0001234).</p>
+            ) : (
+              <p className="text-xs text-[#9ca3af] mt-1">11 characters — on a cheque or in your bank app.</p>
             )}
           </div>
 

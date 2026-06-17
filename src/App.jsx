@@ -288,7 +288,7 @@ function App() {
   // Link a bank from the in-app "Connect bank" modal. Adds the account and, if
   // there's no data yet, pulls in history so the app comes alive immediately.
   const connectBank = (data) => {
-    setBanks((prev) => [...prev, { name: data.name, type: data.type, mask: data.mask, synced: 'just now' }]);
+    setBanks((prev) => [...prev, { name: data.name, type: data.type, mask: data.mask, ifsc: data.ifsc, synced: 'just now' }]);
     setManualMode(false);
     if (transactions.length === 0) {
       setTransactions(generateDemoTransactions(6));
@@ -443,6 +443,7 @@ function App() {
               setSettingsEdit(true);
               setActiveView('settings');
             }}
+            onAddGoal={() => setActiveView('goals')}
           />
         );
       case 'spend':

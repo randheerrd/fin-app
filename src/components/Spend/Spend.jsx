@@ -225,6 +225,8 @@ export default function Spend({
               ...usedCats.map((c) => ({ label: catName(c), value: c })),
             ]}
             onChange={setCategory}
+            active={category !== 'all'}
+            onClear={() => setCategory('all')}
           />
           <Dropdown
             label="Source"
@@ -235,6 +237,8 @@ export default function Spend({
               { label: 'Added by you', value: 'manual' },
             ]}
             onChange={setSource}
+            active={source !== 'all'}
+            onClear={() => setSource('all')}
           />
           <Dropdown
             label="Range"
@@ -247,6 +251,8 @@ export default function Spend({
               { label: 'Over ₹2,000', value: 'gt2000' },
             ]}
             onChange={setRange}
+            active={range !== 'all'}
+            onClear={() => setRange('all')}
           />
           <Dropdown
             label="Merchant"
@@ -256,20 +262,14 @@ export default function Spend({
               ...usedMerchants.map((m) => ({ label: m, value: m })),
             ]}
             onChange={setMerchant}
+            active={merchant !== 'all'}
+            onClear={() => setMerchant('all')}
           />
         </div>
         <div className="flex items-center gap-3">
-          {filtersActive && (
-            <button
-              onClick={resetFilters}
-              className="flex items-center gap-1.5 px-3 py-2 text-sm text-[#6b7280] hover:text-[#111827] transition-colors"
-            >
-              <RotateCcw size={14} />
-              Reset
-            </button>
-          )}
           <Dropdown
             label=""
+            align="right"
             leading={<Calendar size={15} className="text-[#9ca3af]" />}
             value={periodLabel}
             options={[

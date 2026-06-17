@@ -3,6 +3,7 @@ import { X, Trash2, Check } from 'lucide-react';
 import { CATEGORIES } from '../../data/categories';
 import { getToday, groupINR, digitsOnly } from '../../lib/utils';
 import CategoryIcon from '../CategoryIcon';
+import DatePicker from '../DatePicker';
 
 export default function AddExpenseModal({ onClose, onSave, onDelete, initial }) {
   const isEdit = Boolean(initial);
@@ -64,12 +65,11 @@ export default function AddExpenseModal({ onClose, onSave, onDelete, initial }) 
             </div>
             <div>
               <label className="block text-sm font-medium text-[#374151] mb-1.5">Date</label>
-              <input
-                type="date"
+              <DatePicker
                 value={date}
+                onChange={setDate}
                 max={getToday()}
-                onChange={(e) => setDate(e.target.value)}
-                className={inputClass}
+                className={`${inputClass} text-left`}
               />
             </div>
           </div>

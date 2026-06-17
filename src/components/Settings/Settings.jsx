@@ -47,7 +47,7 @@ export default function Settings({
 }) {
   const [showAddBank, setShowAddBank] = useState(false);
   const handleAddBank = (data) => {
-    setBanks((prev) => [...prev, { name: data.name, type: data.type, mask: data.mask, synced: 'just now' }]);
+    setBanks((prev) => [...prev, { name: data.name, type: data.type, mask: data.mask, ifsc: data.ifsc, synced: 'just now' }]);
     setShowAddBank(false);
   };
   // Saved profile (read-only by default) vs the editable draft.

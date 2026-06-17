@@ -90,7 +90,7 @@ export default function OnboardingShell({ onComplete }) {
   };
 
   const addAnotherAccount = (bankData) => {
-    setFoundAccounts((prev) => [...prev, { bank: bankData.name, type: bankData.type, mask: bankData.mask }]);
+    setFoundAccounts((prev) => [...prev, { bank: bankData.name, type: bankData.type, mask: bankData.mask, ifsc: bankData.ifsc }]);
     setSelectedAccounts((prev) => [...prev, true]);
   };
 

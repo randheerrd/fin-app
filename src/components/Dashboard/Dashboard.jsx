@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ChevronRight, Plus, Calendar } from 'lucide-react';
+import { ChevronRight, Plus, Calendar, Target } from 'lucide-react';
 import {
   getTotalSpent,
   getTopCategories,
@@ -182,6 +182,7 @@ export default function Dashboard({
   onAtmSplit,
   onViewAll,
   onSetupBudget,
+  onAddGoal,
 }) {
   const [activeSeg, setActiveSeg] = useState(null);
   const [period, setPeriod] = useState('month');
@@ -386,7 +387,22 @@ export default function Dashboard({
         <div className="border border-[#ECEEF0] rounded-2xl shadow-[0_1px_2px_rgba(16,24,40,0.04)] p-6">
           <p className="text-xs uppercase tracking-wide text-[#9ca3af] font-medium mb-4">Goals</p>
           {goals.length === 0 ? (
-            <p className="text-sm text-[#9ca3af]">No goals yet.</p>
+            <div className="flex flex-col items-center justify-center text-center py-8">
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#F0F7F3] to-[#E3F0E9] ring-1 ring-[#0E3F2E]/10 flex items-center justify-center mb-3">
+                <Target size={22} strokeWidth={1.75} className="text-[#0E3F2E]" />
+              </div>
+              <p className="text-sm font-semibold text-[#111827] mb-1">No goals yet</p>
+              <p className="text-xs text-[#9ca3af] mb-4 max-w-[220px]">
+                Set a target and watch every linked rupee work toward it.
+              </p>
+              <button
+                onClick={onAddGoal}
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-[#0E3F2E] text-white text-sm font-medium rounded-lg hover:bg-[#0a3122] transition-colors"
+              >
+                <Plus size={15} />
+                Set a goal
+              </button>
+            </div>
           ) : (
             <div className="space-y-5">
               {goals.slice(0, 3).map((goal) => {

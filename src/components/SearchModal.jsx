@@ -15,7 +15,6 @@ import { CATEGORIES } from '../data/categories';
 import MerchantLogo from './MerchantLogo';
 
 const catName = (id) => CATEGORIES.find((c) => c.id === id)?.name || 'Other';
-const fmt = (n) => `₹${Math.round(n).toLocaleString('en-IN')}`;
 
 const PAGES = [
   { id: 'dashboard', label: 'Dashboard', icon: Home },
@@ -200,7 +199,6 @@ export default function SearchModal({ transactions, onClose, onNavigate, onOpenM
                         {g.count} {g.count === 1 ? 'txn' : 'txns'} · {catName(g.category)}
                       </p>
                     </div>
-                    <span className="text-sm font-semibold text-[#111827]">{fmt(g.total)}</span>
                   </Row>
                 );
               })}

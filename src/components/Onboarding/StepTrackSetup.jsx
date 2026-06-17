@@ -6,11 +6,13 @@ export default function StepTrackSetup({ onAction }) {
   const [income, setIncome] = useState('');
   const [budget, setBudget] = useState('');
 
+  const incomeNum = parseInt(income.replace(/,/g, ''), 10) || 0;
+  const budgetNum = parseInt(budget.replace(/,/g, ''), 10) || 0;
+  const canContinue = incomeNum > 0 && budgetNum > 0; // both required to proceed
+
   const handleContinue = () => {
-    onAction('continue', {
-      income: parseInt(income.replace(/,/g, '')) || 0, // 0 = left blank → prompt later
-      budget: parseInt(budget.replace(/,/g, '')) || 0,
-    });
+    if (!canContinue) return;
+    onAction('continue', { income: incomeNum, budget: budgetNum });
   };
 
   return (
@@ -56,7 +58,8 @@ export default function StepTrackSetup({ onAction }) {
         </button>
         <button
           onClick={handleContinue}
-          className="flex items-center gap-2 px-5 py-2.5 bg-[#0E3F2E] text-white text-sm font-medium rounded-lg hover:bg-[#0a3122] transition-colors"
+          disabled={!canContinue}
+          className="flex items-center gap-2 px-5 py-2.5 bg-[#0E3F2E] text-white text-sm font-medium rounded-lg hover:bg-[#0a3122] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
         >
           Continue
           <ArrowRight size={16} />
