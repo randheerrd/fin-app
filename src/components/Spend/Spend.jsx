@@ -30,7 +30,7 @@ function SortHeader({ label, col, activeKey, dir, onSort, align = 'left' }) {
   const active = activeKey === col;
   return (
     <th
-      className={`px-6 py-4 text-[11px] font-medium text-[#9ca3af] uppercase tracking-wide ${
+      className={`sticky top-0 z-10 bg-white px-6 py-4 text-[11px] font-medium text-[#9ca3af] uppercase tracking-wide ${
         align === 'right' ? 'text-right' : 'text-left'
       }`}
     >
@@ -61,12 +61,14 @@ export default function Spend({
   searchQuery = '',
   onClearSearch,
   onConnectBank,
+  initialCategories = [],
+  initialPeriod = 'month',
 }) {
-  const [category, setCategory] = useState('all');
-  const [source, setSource] = useState('all');
-  const [range, setRange] = useState('all');
-  const [period, setPeriod] = useState('month');
-  const [merchant, setMerchant] = useState('all');
+  const [category, setCategory] = useState(initialCategories); // multi-select (seeded from dashboard)
+  const [source, setSource] = useState([]);
+  const [range, setRange] = useState([]);
+  const [merchant, setMerchant] = useState([]);
+  const [period, setPeriod] = useState(initialPeriod); // single — one time window (seeded from dashboard)
   const [sortKey, setSortKey] = useState('date');
   const [sortDir, setSortDir] = useState('desc');
   const [editing, setEditing] = useState(null);
@@ -96,14 +98,14 @@ export default function Spend({
   };
 
   const filtersActive =
-    category !== 'all' || source !== 'all' || range !== 'all' || period !== 'month' || merchant !== 'all' || !!searchQuery;
+    category.length > 0 || source.length > 0 || range.length > 0 || merchant.length > 0 || period !== 'month' || !!searchQuery;
 
   const resetFilters = () => {
-    setCategory('all');
-    setSource('all');
-    setRange('all');
+    setCategory([]);
+    setSource([]);
+    setRange([]);
+    setMerchant([]);
     setPeriod('month');
-    setMerchant('all');
     onClearSearch?.();
   };
 
@@ -124,10 +126,10 @@ export default function Spend({
     return true;
   };
 
-  const inRange = (amt) => {
-    if (range === 'lt500') return amt < 500;
-    if (range === 'mid') return amt >= 500 && amt <= 2000;
-    if (range === 'gt2000') return amt > 2000;
+  const inBucket = (amt, bucket) => {
+    if (bucket === 'lt500') return amt < 500;
+    if (bucket === 'mid') return amt >= 500 && amt <= 2000;
+    if (bucket === 'gt2000') return amt > 2000;
     return true;
   };
 
@@ -136,17 +138,16 @@ export default function Spend({
     .filter((t) => {
       if (search && !t.merchant.toLowerCase().includes(search) && !catName(t.category).toLowerCase().includes(search))
         return false;
-      if (merchant !== 'all' && t.merchant !== merchant) return false;
-      if (category !== 'all' && t.category !== category) return false;
-      if (source === 'manual' && t.source !== 'manual') return false;
-      if (source === 'bank' && t.source !== 'bank') return false;
-      if (!inRange(t.amount)) return false;
+      if (merchant.length && !merchant.includes(t.merchant)) return false;
+      if (category.length && !category.includes(t.category)) return false;
+      if (source.length && !source.includes(t.source)) return false;
+      if (range.length && !range.some((b) => inBucket(t.amount, b))) return false;
       if (!inPeriod(t.date)) return false;
       return true;
     })
     .sort(compare);
 
-  const rangeLabel = { all: 'All', lt500: 'Under ₹500', mid: '₹500 – ₹2,000', gt2000: 'Over ₹2,000' }[range];
+  const filteredTotal = filtered.reduce((s, t) => s + t.amount, 0);
   const periodLabel = { month: 'This Month', lastmonth: 'Last Month', '3m': 'Last 3 Months', all: 'All Time' }[period];
 
   if (transactions.length === 0) {
@@ -182,8 +183,8 @@ export default function Spend({
   }
 
   return (
-    <div className="min-h-full bg-white px-8 py-7">
-      <div className="flex items-center justify-between mb-6">
+    <div className="h-full flex flex-col bg-white px-8 py-7">
+      <div className="flex-none flex items-center justify-between mb-6">
         <p className="font-display text-4xl text-[#111827]">Spend</p>
         <button
           onClick={onAddExpense}
@@ -215,56 +216,53 @@ export default function Spend({
       )}
 
       {/* Filters */}
-      <div className="flex items-center justify-between mb-5">
-        <div className="flex items-center gap-3">
+      <div className="flex-none flex items-center justify-between mb-5">
+        <div className="flex items-center gap-3 flex-wrap">
           <Dropdown
+            multi
             label="Category"
-            value={category === 'all' ? 'All' : catName(category)}
-            options={[
-              { label: 'All', value: 'all' },
-              ...usedCats.map((c) => ({ label: catName(c), value: c })),
-            ]}
+            value={category}
+            options={usedCats.map((c) => ({ label: catName(c), value: c }))}
             onChange={setCategory}
-            active={category !== 'all'}
-            onClear={() => setCategory('all')}
           />
           <Dropdown
+            multi
             label="Source"
-            value={source === 'all' ? 'All' : source === 'bank' ? 'Bank' : 'Added by you'}
+            value={source}
             options={[
-              { label: 'All', value: 'all' },
               { label: 'Bank', value: 'bank' },
               { label: 'Added by you', value: 'manual' },
             ]}
             onChange={setSource}
-            active={source !== 'all'}
-            onClear={() => setSource('all')}
           />
           <Dropdown
+            multi
             label="Range"
             leading={<span className="text-[#9ca3af]">₹</span>}
-            value={rangeLabel}
+            value={range}
             options={[
-              { label: 'All', value: 'all' },
               { label: 'Under ₹500', value: 'lt500' },
               { label: '₹500 – ₹2,000', value: 'mid' },
               { label: 'Over ₹2,000', value: 'gt2000' },
             ]}
             onChange={setRange}
-            active={range !== 'all'}
-            onClear={() => setRange('all')}
           />
           <Dropdown
+            multi
             label="Merchant"
-            value={merchant === 'all' ? 'All' : merchant}
-            options={[
-              { label: 'All', value: 'all' },
-              ...usedMerchants.map((m) => ({ label: m, value: m })),
-            ]}
+            value={merchant}
+            options={usedMerchants.map((m) => ({ label: m, value: m }))}
             onChange={setMerchant}
-            active={merchant !== 'all'}
-            onClear={() => setMerchant('all')}
           />
+          {filtersActive && (
+            <button
+              onClick={resetFilters}
+              className="flex items-center gap-1.5 px-2.5 py-2 text-sm text-[#6b7280] hover:text-[#111827] transition-colors"
+            >
+              <RotateCcw size={14} />
+              Clear filters
+            </button>
+          )}
         </div>
         <div className="flex items-center gap-3">
           <Dropdown
@@ -301,7 +299,8 @@ export default function Spend({
           )}
         </EmptyState>
       ) : (
-      <div className="border border-[#ECEEF0] rounded-2xl shadow-[0_1px_2px_rgba(16,24,40,0.04)] overflow-hidden">
+      <div className="flex-1 min-h-0">
+        <div className="max-h-full overflow-auto border border-[#ECEEF0] rounded-2xl shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
         <table className="w-full">
           <thead>
             <tr className="border-b border-[#f3f4f6]">
@@ -310,7 +309,7 @@ export default function Spend({
               <SortHeader label="Category" col="category" activeKey={sortKey} dir={sortDir} onSort={toggleSort} />
               <SortHeader label="Source" col="source" activeKey={sortKey} dir={sortDir} onSort={toggleSort} />
               <SortHeader label="Amount" col="amount" activeKey={sortKey} dir={sortDir} onSort={toggleSort} align="right" />
-              <th className="px-6 py-4" />
+              <th className="sticky top-0 z-10 bg-white px-6 py-4" />
             </tr>
           </thead>
           <tbody className="divide-y divide-[#f6f7f8]">
@@ -350,7 +349,25 @@ export default function Spend({
               );
             })}
           </tbody>
+          <tfoot>
+            <tr>
+              <td
+                colSpan={4}
+                className="sticky bottom-0 z-10 bg-[#f9fafb] px-6 py-3.5 text-sm font-semibold text-[#111827] border-t border-[#ECEEF0]"
+              >
+                Total
+                <span className="text-[#9ca3af] font-normal">
+                  {' '}· {filtered.length} {filtered.length === 1 ? 'transaction' : 'transactions'}
+                </span>
+              </td>
+              <td className="sticky bottom-0 z-10 bg-[#f9fafb] px-6 py-3.5 text-right text-sm font-bold text-[#111827] border-t border-[#ECEEF0] whitespace-nowrap">
+                −₹{filteredTotal.toLocaleString('en-IN')}
+              </td>
+              <td className="sticky bottom-0 z-10 bg-[#f9fafb] border-t border-[#ECEEF0]" />
+            </tr>
+          </tfoot>
         </table>
+        </div>
       </div>
       )}
 

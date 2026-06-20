@@ -8,6 +8,7 @@ import {
   getDaysInMonth,
 } from '../../lib/utils';
 import { CATEGORIES, CHART_PALETTE, getCategoryChip } from '../../data/categories';
+import { effectiveSaved, goalProjection } from '../../lib/goalMath';
 import MerchantLogo from '../MerchantLogo';
 import CategoryIcon from '../CategoryIcon';
 import Dropdown from '../Dropdown';
@@ -183,6 +184,7 @@ export default function Dashboard({
   onViewAll,
   onSetupBudget,
   onAddGoal,
+  onCategorySelect,
 }) {
   const [activeSeg, setActiveSeg] = useState(null);
   const [period, setPeriod] = useState('month');
@@ -214,7 +216,7 @@ export default function Dashboard({
   const topCat = topCategories[0];
 
   // Goals summary (shown to everyone — friendly empty state when none).
-  const totalSaved = goals.reduce((a, g) => a + (g.saved || 0), 0);
+  const totalSaved = goals.reduce((a, g) => a + effectiveSaved(g, transactions), 0);
   const totalTarget = goals.reduce((a, g) => a + (g.target || 0), 0);
   const goalProgress = totalTarget > 0 ? Math.round((totalSaved / totalTarget) * 100) : 0;
 
@@ -228,6 +230,11 @@ export default function Dashboard({
     ...(othersValue > 0 ? [{ id: 'others', label: 'Others', value: othersValue, color: '#F59E0B' }] : []),
   ];
   const donutTotal = segments.reduce((a, s) => a + s.value, 0) || 1;
+
+  // The categories rolled into "Others" = everything beyond the top 4 shown.
+  const otherCatIds = sorted.slice(4).map(([id]) => id);
+  // Open Spend filtered to the clicked category (or all "Others" categories).
+  const selectSegment = (s) => onCategorySelect?.(s.id === 'others' ? otherCatIds : [s.id], period);
 
   const thisMonthMax = Math.max(...topCategories.map((c) => c.amount), 1);
 
@@ -367,9 +374,15 @@ export default function Dashboard({
           )}
           <div className="space-y-4">
             {topCategories.map((c) => (
-              <div key={c.category}>
+              <button
+                key={c.category}
+                onClick={() => onCategorySelect?.([c.category], period)}
+                className="w-full text-left group"
+              >
                 <div className="flex justify-between mb-1.5">
-                  <span className="text-sm text-[#374151]">{catName(c.category)}</span>
+                  <span className="text-sm text-[#374151] group-hover:text-[#0E3F2E] transition-colors">
+                    {catName(c.category)}
+                  </span>
                   <span className="text-sm font-semibold text-[#111827]">{fmt(c.amount)}</span>
                 </div>
                 <div className="w-full bg-[#f3f4f6] rounded-full h-1.5 overflow-hidden">
@@ -378,7 +391,7 @@ export default function Dashboard({
                     style={{ width: `${(c.amount / thisMonthMax) * 100}%` }}
                   />
                 </div>
-              </div>
+              </button>
             ))}
           </div>
         </div>
@@ -406,28 +419,29 @@ export default function Dashboard({
           ) : (
             <div className="space-y-5">
               {goals.slice(0, 3).map((goal) => {
-                const pct = Math.min(Math.round((goal.saved / goal.target) * 100), 100);
-                const onTrack = goal.isNew || pct >= (goal.detected ? 20 : 55);
+                const saved = effectiveSaved(goal, transactions);
+                const pct = Math.min(Math.round((saved / goal.target) * 100), 100);
+                const atRisk = goalProjection({ ...goal, saved }).status === 'at-risk';
                 return (
                   <div key={goal.id}>
                     <div className="flex items-center justify-between mb-2">
                       <p className="text-sm font-medium text-[#111827]">{goal.name}</p>
                       <span
                         className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${
-                          onTrack ? 'bg-green-50 text-green-700' : 'bg-orange-50 text-orange-600'
+                          atRisk ? 'bg-orange-50 text-orange-600' : 'bg-green-50 text-green-700'
                         }`}
                       >
-                        {onTrack ? 'On Track' : 'Needs Attention'}
+                        {atRisk ? 'At risk' : 'On Track'}
                       </span>
                     </div>
                     <div className="w-full bg-[#f3f4f6] rounded-full h-2 overflow-hidden mb-1.5">
                       <div
-                        className={`h-full rounded-full ${onTrack ? 'bg-[#0E3F2E]' : 'bg-[#F08A5D]'}`}
+                        className={`h-full rounded-full ${atRisk ? 'bg-[#F08A5D]' : 'bg-[#0E3F2E]'}`}
                         style={{ width: `${pct}%` }}
                       />
                     </div>
                     <p className="text-xs text-[#9ca3af]">
-                      {fmt(goal.saved)} saved of {fmt(goal.target)}
+                      {fmt(saved)} saved of {fmt(goal.target)}
                       {goal.monthly ? ` · adding ${fmt(goal.monthly)}/month` : ''}
                     </p>
                   </div>
@@ -448,7 +462,7 @@ export default function Dashboard({
               total={donutTotal}
               active={activeSeg}
               onHover={setActiveSeg}
-              onSelect={() => onViewAll?.()}
+              onSelect={selectSegment}
             />
             <div className="flex-1 space-y-0.5">
               {segments.map((s, i) => (
@@ -456,7 +470,7 @@ export default function Dashboard({
                   key={s.id}
                   onMouseEnter={() => setActiveSeg(i)}
                   onMouseLeave={() => setActiveSeg(null)}
-                  onClick={() => onViewAll?.()}
+                  onClick={() => selectSegment(s)}
                   className={`w-full flex items-center justify-between py-2 px-2 rounded-lg transition-colors ${
                     activeSeg === i ? 'bg-[#f9fafb]' : ''
                   }`}
@@ -485,7 +499,7 @@ export default function Dashboard({
       <div className="border border-[#ECEEF0] rounded-2xl shadow-[0_1px_2px_rgba(16,24,40,0.04)] p-6">
         <div className="flex items-center justify-between mb-4">
           <p className="text-xs uppercase tracking-wide text-[#9ca3af] font-medium">Recent Transactions</p>
-          <button onClick={() => onViewAll?.()} className="text-sm font-medium text-[#0E3F2E] hover:underline">
+          <button onClick={() => onViewAll?.(period)} className="text-sm font-medium text-[#0E3F2E] hover:underline">
             See All
           </button>
         </div>

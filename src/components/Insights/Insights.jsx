@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, Sparkles, TrendingUp, Receipt, CalendarDays, ArrowUp, ArrowDown } from 'lucide-react';
+import { Link, Sparkles, TrendingUp, Receipt, CalendarDays, ArrowUp, ArrowDown, RotateCcw } from 'lucide-react';
 import EmptyState from '../EmptyState';
 import CategoryIcon from '../CategoryIcon';
 import MerchantLogo from '../MerchantLogo';
@@ -60,7 +60,8 @@ function Card({ children }) {
 
 export default function Insights({ transactions, manualMode, onLinkBank, onConnectBank }) {
   const [period, setPeriod] = useState('all'); // show everything by default
-  const [category, setCategory] = useState('all');
+  const [category, setCategory] = useState([]); // multi-select; empty = all
+  const allCats = category.length === 0;
 
   const hasEnoughData = transactions.length >= 7;
 
@@ -90,7 +91,7 @@ export default function Insights({ transactions, manualMode, onLinkBank, onConne
 
   const nonAtm = transactions.filter((t) => !t.atm);
   const usedCats = [...new Set(nonAtm.map((t) => t.category))];
-  const scoped = nonAtm.filter((t) => inPeriod(t.date, period) && (category === 'all' || t.category === category));
+  const scoped = nonAtm.filter((t) => inPeriod(t.date, period) && (allCats || category.includes(t.category)));
 
   const total = scoped.reduce((s, t) => s + t.amount, 0);
   const count = scoped.length;
@@ -155,7 +156,7 @@ export default function Insights({ transactions, manualMode, onLinkBank, onConne
     prevTxns = nonAtm.filter((t) => monthMatch(t.date, p.getFullYear(), p.getMonth()));
     prevLabel = p.toLocaleDateString('en-IN', { month: 'short' });
   }
-  const prevScoped = category === 'all' ? prevTxns : prevTxns.filter((t) => t.category === category);
+  const prevScoped = allCats ? prevTxns : prevTxns.filter((t) => category.includes(t.category));
   const prevTotal = prevScoped.reduce((s, t) => s + t.amount, 0);
   const sumCat = (txns, id) => txns.filter((t) => t.category === id).reduce((s, t) => s + t.amount, 0);
   const pctChange = (cur, prev) => (prev ? Math.round(((cur - prev) / prev) * 100) : null);
@@ -175,9 +176,10 @@ export default function Insights({ transactions, manualMode, onLinkBank, onConne
     };
   });
 
+  const filtersActive = period !== 'all' || category.length > 0;
   const clearAll = () => {
     setPeriod('all');
-    setCategory('all');
+    setCategory([]);
   };
 
   const dayName = (i) => ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][i];
@@ -188,13 +190,21 @@ export default function Insights({ transactions, manualMode, onLinkBank, onConne
       <div className="flex items-center justify-between mb-5">
         <p className="font-display text-4xl text-[#111827]">Insights</p>
         <div className="flex items-center gap-3">
+          {filtersActive && (
+            <button
+              onClick={clearAll}
+              className="flex items-center gap-1.5 px-2.5 py-2 text-sm text-[#6b7280] hover:text-[#111827] transition-colors"
+            >
+              <RotateCcw size={14} />
+              Clear filters
+            </button>
+          )}
           <Dropdown
+            multi
             label="Category"
-            value={category === 'all' ? 'All' : catName(category)}
-            options={[{ label: 'All', value: 'all' }, ...usedCats.map((c) => ({ label: catName(c), value: c }))]}
+            value={category}
+            options={usedCats.map((c) => ({ label: catName(c), value: c }))}
             onChange={setCategory}
-            active={category !== 'all'}
-            onClear={() => setCategory('all')}
           />
           <Dropdown
             label=""
@@ -226,7 +236,8 @@ export default function Insights({ transactions, manualMode, onLinkBank, onConne
             <div className="flex items-center gap-2 mb-2 text-[#0E3F2E]">
               <TrendingUp size={16} />
               <span className="text-sm font-semibold">
-                {category === 'all' ? 'Overview' : catName(category)} · {PERIOD_LABEL[period]}
+                {allCats ? 'Overview' : category.length === 1 ? catName(category[0]) : `${category.length} categories`} ·{' '}
+                {PERIOD_LABEL[period]}
               </span>
             </div>
             <p className="text-sm text-[#6b7280] mb-4">
@@ -278,7 +289,7 @@ export default function Insights({ transactions, manualMode, onLinkBank, onConne
           )}
 
           {/* Category breakdown — segmented bar + compact legend */}
-          {category === 'all' && topCategories.length > 1 && (
+          {allCats && topCategories.length > 1 && (
             <Card>
               <p className="text-sm font-semibold text-[#111827] mb-1.5">Where it goes</p>
               <p className="text-sm text-[#6b7280] mb-4">
@@ -340,7 +351,7 @@ export default function Insights({ transactions, manualMode, onLinkBank, onConne
           </Card>
 
           {/* Category deep-dives — one per top category */}
-          {category === 'all' &&
+          {allCats &&
             deepDives.map((dd) => {
               const chip = getCategoryChip(dd.id);
               return (

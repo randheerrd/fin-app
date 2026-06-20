@@ -54,6 +54,8 @@ function App() {
   const [activeView, setActiveView] = useState('dashboard');
   const [activeFilter] = useState(null);
   const [spendSearch, setSpendSearch] = useState(''); // merchant text from global search → filters Spend
+  const [spendCategories, setSpendCategories] = useState([]); // category filter pushed from the dashboard
+  const [spendPeriod, setSpendPeriod] = useState('month'); // period carried over from the dashboard
   const [settingsEdit, setSettingsEdit] = useState(false); // open Settings straight into edit mode
   const [sipDismissed, setSipDismissed] = useState(false);
 
@@ -435,8 +437,10 @@ function App() {
             activeFilter={activeFilter}
             onAddExpense={() => setShowAddExpense(true)}
             onAtmSplit={() => setShowAtmSplit(true)}
-            onViewAll={() => {
+            onViewAll={(p) => {
               setSpendSearch('');
+              setSpendCategories([]);
+              setSpendPeriod(p || 'month');
               setActiveView('spend');
             }}
             onSetupBudget={() => {
@@ -444,6 +448,12 @@ function App() {
               setActiveView('settings');
             }}
             onAddGoal={() => setActiveView('goals')}
+            onCategorySelect={(cats, p) => {
+              setSpendSearch('');
+              setSpendCategories(cats);
+              setSpendPeriod(p || 'month');
+              setActiveView('spend');
+            }}
           />
         );
       case 'spend':
@@ -457,6 +467,8 @@ function App() {
             onDeleteTransaction={deleteTransaction}
             searchQuery={spendSearch}
             onClearSearch={() => setSpendSearch('')}
+            initialCategories={spendCategories}
+            initialPeriod={spendPeriod}
             onConnectBank={() => setShowConnectBank(true)}
           />
         );
@@ -552,6 +564,8 @@ function App() {
           activeView={activeView}
           setActiveView={(v) => {
             setSpendSearch('');
+            setSpendCategories([]);
+            setSpendPeriod('month');
             setSettingsEdit(false);
             setActiveView(v);
           }}

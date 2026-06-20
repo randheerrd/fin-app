@@ -3,6 +3,8 @@ import { Plus, Target } from 'lucide-react';
 import AddGoalModal from './AddGoalModal';
 import GoalCard from './GoalCard';
 import EmptyState from '../EmptyState';
+import InfoTip from '../InfoTip';
+import { goalProjection, effectiveSaved } from '../../lib/goalMath';
 
 const fmt = (n) => `₹${Math.round(n).toLocaleString('en-IN')}`;
 
@@ -37,12 +39,11 @@ export default function Goals({
     setPrefill(null);
   };
 
-  const onTrackCount = goals.filter((g) => {
-    if (g.isNew) return true;
-    return (g.saved / g.target) * 100 >= (g.detected ? 20 : 55);
-  }).length;
+  const onTrackCount = goals.filter(
+    (g) => goalProjection({ ...g, saved: effectiveSaved(g, transactions) }).status !== 'at-risk'
+  ).length;
 
-  const totalSaved = goals.reduce((s, g) => s + (g.saved || 0), 0);
+  const totalSaved = goals.reduce((s, g) => s + effectiveSaved(g, transactions), 0);
   const shouldShowSip = !sipDismissed && transactions.length > 0;
 
   if (goals.length === 0 && !shouldShowSip) {
@@ -92,7 +93,24 @@ export default function Goals({
   return (
     <div className="min-h-full bg-white px-8 py-7">
       <div className="flex items-center justify-between mb-6">
-        <p className="font-display text-4xl text-[#111827]">Goals</p>
+        <div className="flex items-center gap-2.5">
+          <p className="font-display text-4xl text-[#111827]">Goals</p>
+          <InfoTip size={18}>
+            <p className="text-sm font-semibold text-[#111827] mb-2">How a goal is tracked</p>
+            <p className="mb-2">
+              <span className="font-medium text-[#374151]">Saved</span> = your starting balance plus auto-savings from the
+              categories linked to the goal.
+            </p>
+            <p className="mb-2">
+              <span className="font-medium text-[#374151]">Auto-savings</span> — for each linked category we take your usual
+              monthly spend (its historical average). Any month you spend below that, the difference is credited toward the goal.
+            </p>
+            <p>
+              <span className="font-medium text-[#374151]">On pace / At risk</span> — we divide what's left by your monthly
+              amount and compare the finish date to your deadline.
+            </p>
+          </InfoTip>
+        </div>
         <button
           onClick={() => setShowAddModal(true)}
           className="flex items-center gap-2 px-4 py-2.5 bg-[#0E3F2E] text-white text-sm font-medium rounded-lg hover:bg-[#0a3122] transition-colors"
@@ -145,7 +163,7 @@ export default function Goals({
 
       <div className="space-y-5">
         {goals.map((goal) => (
-          <GoalCard key={goal.id} goal={goal} onEdit={() => setEditingGoal(goal)} />
+          <GoalCard key={goal.id} goal={goal} transactions={transactions} onEdit={() => setEditingGoal(goal)} />
         ))}
       </div>
 
