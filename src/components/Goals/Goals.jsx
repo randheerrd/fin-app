@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { Plus, Target } from 'lucide-react';
+import { Plus, Target, Info } from 'lucide-react';
 import AddGoalModal from './AddGoalModal';
 import GoalCard from './GoalCard';
+import GoalsInfoModal from './GoalsInfoModal';
 import EmptyState from '../EmptyState';
-import InfoTip from '../InfoTip';
 import { goalProjection } from '../../lib/goalMath';
 
 const fmt = (n) => `₹${Math.round(n).toLocaleString('en-IN')}`;
@@ -29,7 +29,14 @@ export default function Goals({
 }) {
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingGoal, setEditingGoal] = useState(null);
+  const [editFocusDeadline, setEditFocusDeadline] = useState(false);
   const [prefill, setPrefill] = useState(null);
+  const [showInfo, setShowInfo] = useState(false);
+
+  const openEdit = (goal, focusDeadline = false) => {
+    setEditingGoal(goal);
+    setEditFocusDeadline(focusDeadline);
+  };
 
   const openTemplate = (tpl) => {
     setPrefill(tpl);
@@ -93,23 +100,14 @@ export default function Goals({
     <div className="min-h-full bg-white px-8 py-7">
       <div className="flex items-center justify-between mb-6">
         <p className="font-display text-4xl text-[#111827]">Goals</p>
-        <div className="flex items-center gap-4">
-          <InfoTip size={17} align="right">
-            <p className="text-sm font-semibold text-[#111827] mb-2">How a goal is tracked</p>
-            <p className="mb-2">
-              <span className="font-medium text-[#374151]">Saved</span> only grows when you add money — either a manual save or
-              by accepting an "Available to save" suggestion. Every change is logged under "History".
-            </p>
-            <p className="mb-2">
-              <span className="font-medium text-[#374151]">Available to save</span> — for each linked category we compare this
-              month's spend to your usual monthly pace (its historical average). Anything you're under is offered to move to the
-              goal — nothing is credited automatically.
-            </p>
-            <p>
-              <span className="font-medium text-[#374151]">Need / mo</span> — what's left ÷ the months until your deadline. It
-              drops as you save more.
-            </p>
-          </InfoTip>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setShowInfo(true)}
+            className="flex items-center gap-1.5 px-3.5 py-2.5 border border-[#e5e7eb] text-[#374151] text-sm font-medium rounded-lg hover:bg-[#f9fafb] transition-colors"
+          >
+            <Info size={15} className="text-[#9ca3af]" />
+            How it works
+          </button>
           <button
             onClick={() => setShowAddModal(true)}
             className="flex items-center gap-2 px-4 py-2.5 bg-[#0E3F2E] text-white text-sm font-medium rounded-lg hover:bg-[#0a3122] transition-colors"
@@ -167,11 +165,14 @@ export default function Goals({
             key={goal.id}
             goal={goal}
             transactions={transactions}
-            onEdit={() => setEditingGoal(goal)}
+            allGoals={goals}
+            onEdit={(focusDeadline) => openEdit(goal, focusDeadline)}
             onContribute={onContribute}
           />
         ))}
       </div>
+
+      {showInfo && <GoalsInfoModal onClose={() => setShowInfo(false)} />}
 
       {showAddModal && (
         <AddGoalModal
@@ -185,6 +186,7 @@ export default function Goals({
       {editingGoal && (
         <AddGoalModal
           initial={editingGoal}
+          focusDeadline={editFocusDeadline}
           onClose={() => setEditingGoal(null)}
           onSave={(d) => { onUpdateGoal(d); setEditingGoal(null); }}
           onDelete={(id) => { onDeleteGoal(id); setEditingGoal(null); }}

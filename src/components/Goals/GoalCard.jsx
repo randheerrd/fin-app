@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { CalendarClock, AlertTriangle, CheckCircle2, History, Pencil, ArrowRight, Settings2, MoreVertical } from 'lucide-react';
+import { History, Pencil, ArrowRight, Settings2, MoreVertical } from 'lucide-react';
 import { CATEGORIES, getCategoryChip } from '../../data/categories';
 import CategoryIcon from '../CategoryIcon';
 import { goalProjection, availableToSave } from '../../lib/goalMath';
@@ -12,7 +12,7 @@ const fmtDate = (d) => {
   return isNaN(x) ? d : x.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
 };
 
-export default function GoalCard({ goal, transactions = [], onEdit, onContribute }) {
+export default function GoalCard({ goal, transactions = [], allGoals = [], onEdit, onContribute }) {
   const [dismissed, setDismissed] = useState(false); // session-only dismissal of the suggestion
   const [showHistory, setShowHistory] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -39,10 +39,6 @@ export default function GoalCard({ goal, transactions = [], onEdit, onContribute
       ? { text: 'Overdue', cls: 'bg-orange-50 text-orange-600' }
       : { text: 'On Track', cls: 'bg-green-50 text-green-700' };
 
-  // Sentiment-colored status icon (detail shown on hover) beside the badge.
-  const StatusIcon = proj.tone === 'warn' ? AlertTriangle : done ? CheckCircle2 : CalendarClock;
-  const statusColor =
-    proj.tone === 'warn' ? 'text-[#B45309]' : proj.tone === 'neutral' ? 'text-[#9ca3af]' : 'text-[#15803D]';
 
   const stats = [
     { label: 'Complete', value: `${Math.round(progress)}%` },
@@ -51,16 +47,26 @@ export default function GoalCard({ goal, transactions = [], onEdit, onContribute
     { label: 'Need / mo', value: proj.requiredMonthly ? fmt(proj.requiredMonthly) : '—' },
   ];
 
-  // Available to save this month (a suggestion, opt-in).
-  const avail = availableToSave(goal, transactions);
+  // Available to save this month (a suggestion, opt-in). Surplus from shared
+  // categories is split across linking goals, so it's never offered twice.
+  const avail = availableToSave(goal, transactions, allGoals);
   const showAvail = !dismissed && avail.total > 0 && remaining > 0;
   const topCat = avail.cats[0]?.cat;
+
+  // Readable list of the categories contributing the surplus.
+  const availNames = avail.cats.map((c) => catName(c.cat));
+  const reasonCats =
+    availNames.length === 0
+      ? 'linked'
+      : availNames.length === 1
+        ? availNames[0]
+        : `${availNames.slice(0, -1).join(', ')} & ${availNames[availNames.length - 1]}`;
 
   const handleMove = () => {
     onContribute?.(goal.id, avail.total, {
       id: crypto.randomUUID(),
       type: 'auto',
-      label: topCat ? `From ${catName(topCat)} surplus` : 'Available surplus',
+      label: availNames.length <= 1 ? `From ${reasonCats} surplus` : 'From linked-category surplus',
       amount: avail.total,
       date: getToday(),
       categoryId: topCat,
@@ -75,9 +81,18 @@ export default function GoalCard({ goal, transactions = [], onEdit, onContribute
       <div className="flex items-start justify-between mb-4">
         <div>
           <p className="font-bold text-[#111827]">{goal.name}</p>
-          <p className="text-xs text-[#9ca3af] mt-0.5">
+          <p className="text-xs text-[#374151] mt-0.5">
             Target {fmt(goal.target)}
             {goal.deadline && ` · by ${goal.deadline}`}
+            {proj.status === 'on-track' && proj.requiredMonthly > 0 && (
+              <span className="font-medium"> (Save {fmt(proj.requiredMonthly)}/mo)</span>
+            )}
+            {proj.status === 'overdue' && <span className="font-medium"> ({fmt(remaining)} still to go)</span>}
+            {proj.status === 'planning' && (
+              <button onClick={() => onEdit(true)} className="font-medium hover:underline">
+                {' '}(Add a deadline)
+              </button>
+            )}
           </p>
         </div>
         <div className="flex items-center gap-1.5">
@@ -138,8 +153,7 @@ export default function GoalCard({ goal, transactions = [], onEdit, onContribute
           <p className="text-[11px] font-semibold text-[#0E3F2E] uppercase tracking-wide">Available to save this month</p>
           <p className="text-2xl font-bold text-[#111827] mt-1 mb-1">{fmt(avail.total)}</p>
           <p className="text-xs text-[#6b7280]">
-            You're {fmt(avail.total)} under your usual {topCat ? catName(topCat) : 'linked'}{' '}
-            {avail.cats.length > 1 ? 'spend' : 'spend'} this month. Move it to {goal.name}?
+            You're {fmt(avail.total)} under your usual {reasonCats} spend this month. Move it to {goal.name}?
           </p>
           <div className="flex items-center gap-2 mt-3">
             <button
@@ -161,7 +175,6 @@ export default function GoalCard({ goal, transactions = [], onEdit, onContribute
       {/* Linked categories */}
       {goal.linked && goal.linked.length > 0 && (
         <div className="mt-4 flex flex-wrap items-center gap-2">
-          <span className="text-xs text-[#9ca3af] mr-0.5">Linked categories</span>
           {goal.linked.map((id) => {
             const chip = getCategoryChip(id);
             return (
@@ -175,14 +188,6 @@ export default function GoalCard({ goal, transactions = [], onEdit, onContribute
             );
           })}
         </div>
-      )}
-
-      {/* Derived monthly target — sentiment-colored, no box */}
-      {proj.text && (
-        <p className={`flex items-center gap-2 mt-3.5 text-sm font-medium ${statusColor}`}>
-          <StatusIcon size={15} className="flex-shrink-0" />
-          {proj.text}
-        </p>
       )}
 
       {/* Contribution history (read-only, toggled from the ⋮ menu) */}

@@ -11,7 +11,7 @@ const initialDeadlineValue = (d) => {
   return parsed ? toMonthValue(parsed) : '';
 };
 
-export default function AddGoalModal({ onClose, onSave, onDelete, initial, forceCreate = false }) {
+export default function AddGoalModal({ onClose, onSave, onDelete, initial, forceCreate = false, focusDeadline = false }) {
   // forceCreate: prefilled (e.g. from a template) but still a brand-new goal.
   const isEdit = Boolean(initial) && !forceCreate;
   const today = new Date();
@@ -100,6 +100,7 @@ export default function AddGoalModal({ onClose, onSave, onDelete, initial, force
                 min={today}
                 placeholder="Select month"
                 className={`${inputClass} text-left`}
+                autoOpen={focusDeadline}
               />
             </div>
           </div>

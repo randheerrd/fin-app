@@ -10,7 +10,7 @@ const parseVal = (v) => {
 
 // Themed month + year picker. `value`/`onChange` use "YYYY-MM" strings.
 // `min` (Date or "YYYY-MM") disables earlier months.
-export default function MonthYearPicker({ value, onChange, min, placeholder = 'Select month', className = '' }) {
+export default function MonthYearPicker({ value, onChange, min, placeholder = 'Select month', className = '', autoOpen = false }) {
   const sel = parseVal(value);
   const today = new Date();
   const minD = min
@@ -20,7 +20,7 @@ export default function MonthYearPicker({ value, onChange, min, placeholder = 'S
     : null;
   const minYear = minD?.year ?? -Infinity;
 
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(autoOpen);
   const [viewYear, setViewYear] = useState(sel?.year ?? today.getFullYear());
   const ref = useRef(null);
 

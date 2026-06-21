@@ -27,24 +27,30 @@ const money = (n) => `₹${Math.round(n).toLocaleString('en-IN')}`;
 
 // "Available to save this month" — for each linked category, how far UNDER your
 // usual monthly pace you are right now (usual pace = the category's historical
-// monthly average, used as the implicit budget since the app has no per-category
-// budgets). This is a *suggestion* the user can move to the goal; nothing is
-// credited automatically. Amounts already moved this month (logged as 'auto'
-// contributions) are subtracted so the same surplus isn't offered twice.
+// monthly average, the implicit budget since the app has no per-category budgets).
+// A *suggestion* the user can move to the goal; nothing is credited automatically.
+//
+// When a category is linked to multiple goals its surplus is SPLIT across them
+// (proportional to each goal's remaining amount) so the same rupee is never
+// offered twice. Amounts this goal already moved this month are subtracted.
+// `allGoals` lets us compute the split; pass the full goals array.
 // Returns { total, cats: [{ cat, amount }] } — rounded ₹.
-export function availableToSave(goal, transactions = []) {
+export function availableToSave(goal, transactions = [], allGoals = []) {
   const cats = goal?.linked || [];
   if (cats.length === 0) return { total: 0, cats: [] };
 
   const byCatMonth = {}; // category -> { 'YYYY-MM': spend }
   for (const t of transactions) {
-    if (t.atm || !cats.includes(t.category)) continue;
+    if (t.atm) continue;
     const m = String(t.date).slice(0, 7);
     (byCatMonth[t.category] ??= {})[m] = (byCatMonth[t.category][m] || 0) + t.amount;
   }
 
   const now = new Date();
   const curMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  const remainingOf = (g) => Math.max((g.target || 0) - (g.saved || 0), 0);
+  const myRemaining = remainingOf(goal);
+  const pool = allGoals.length ? allGoals : [goal];
 
   const catBreakdown = [];
   let total = 0;
@@ -53,14 +59,20 @@ export function availableToSave(goal, transactions = []) {
     const completed = Object.entries(months).filter(([m]) => m !== curMonth);
     if (completed.length === 0) continue;
     const usual = completed.reduce((s, [, v]) => s + v, 0) / completed.length; // implicit budget
-    const under = Math.max(usual - (months[curMonth] || 0), 0); // under your usual pace this month
-    if (under > 0) {
-      catBreakdown.push({ cat: c, amount: Math.round(under) });
-      total += under;
+    const surplus = Math.max(usual - (months[curMonth] || 0), 0); // under usual pace this month
+    if (surplus <= 0) continue;
+
+    // Split the surplus across incomplete goals that link this category.
+    const linkers = pool.filter((g) => (g.linked || []).includes(c) && remainingOf(g) > 0);
+    const totalRemaining = linkers.reduce((s, g) => s + remainingOf(g), 0);
+    const share = totalRemaining > 0 ? surplus * (myRemaining / totalRemaining) : 0;
+    if (share > 0) {
+      catBreakdown.push({ cat: c, amount: Math.round(share) });
+      total += share;
     }
   }
 
-  // Don't re-offer surplus already moved this month.
+  // Don't re-offer what this goal already moved this month.
   const movedThisMonth = (goal.contributionLog || [])
     .filter((e) => e.type === 'auto' && String(e.date).slice(0, 7) === curMonth)
     .reduce((s, e) => s + (e.amount || 0), 0);

@@ -4,6 +4,7 @@ import BrandLogo from '../BrandLogo';
 import { bankBrand } from '../../lib/logos';
 import { groupINR, digitsOnly } from '../../lib/utils';
 import AddBankModal from '../modals/AddBankModal';
+import ExportDataModal from './ExportDataModal';
 
 function Toggle({ checked, onChange }) {
   return (
@@ -46,6 +47,7 @@ export default function Settings({
   startInEdit = false,
 }) {
   const [showAddBank, setShowAddBank] = useState(false);
+  const [showExport, setShowExport] = useState(false);
   const handleAddBank = (data) => {
     setBanks((prev) => [...prev, { name: data.name, type: data.type, mask: data.mask, ifsc: data.ifsc, synced: 'just now' }]);
     setShowAddBank(false);
@@ -90,21 +92,6 @@ export default function Settings({
     setPausedBanks((prev) => ({ ...prev, [idx]: !prev[idx] }));
   };
 
-  const handleExportCSV = () => {
-    if (!transactions.length) return;
-    const headers = ['Date', 'Merchant', 'Category', 'Amount'];
-    const rows = transactions.map((t) => [t.date, t.merchant, t.category, t.amount]);
-    const csv = [headers, ...rows]
-      .map((r) => r.map((c) => `"${String(c ?? '').replace(/"/g, '""')}"`).join(','))
-      .join('\n');
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'finapp-transactions.csv';
-    a.click();
-    URL.revokeObjectURL(url);
-  };
 
   const inputClass =
     'w-full px-3.5 py-2.5 text-sm text-[#111827] bg-white border border-[#e5e7eb] rounded-lg outline-none focus:border-[#0E3F2E] transition-colors placeholder:text-[#9ca3af]';
@@ -343,14 +330,14 @@ export default function Settings({
               <div className="flex items-center justify-between gap-4">
                 <div>
                   <p className="text-sm font-medium text-[#111827]">Export my data</p>
-                  <p className="text-xs text-[#9ca3af] mt-0.5">A full CSV of every transaction, yours to keep.</p>
+                  <p className="text-xs text-[#9ca3af] mt-0.5">Pick a date range and format — CSV, Excel, or PDF.</p>
                 </div>
                 <button
-                  onClick={handleExportCSV}
+                  onClick={() => setShowExport(true)}
                   disabled={!transactions.length}
                   className="px-4 py-2 text-sm font-medium text-[#374151] border border-[#e5e7eb] rounded-lg hover:bg-[#f9fafb] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                 >
-                  Export CSV
+                  Export Data
                 </button>
               </div>
               <div className="flex items-center justify-between gap-4">
@@ -427,6 +414,7 @@ export default function Settings({
       )}
 
       {showAddBank && <AddBankModal onClose={() => setShowAddBank(false)} onAdd={handleAddBank} />}
+      {showExport && <ExportDataModal transactions={transactions} onClose={() => setShowExport(false)} />}
     </div>
   );
 }
