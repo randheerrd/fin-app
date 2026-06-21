@@ -8,7 +8,6 @@ import { groupINR, digitsOnly } from '../../lib/utils';
 export default function StepGoalSetup({ onAction }) {
   const [name, setName] = useState('');
   const [target, setTarget] = useState('');
-  const [monthly, setMonthly] = useState('');
   const [deadline, setDeadline] = useState('');
   const [linked, setLinked] = useState([]);
 
@@ -21,7 +20,6 @@ export default function StepGoalSetup({ onAction }) {
         name,
         target: parseFloat(target) || 0,
         saved: 0,
-        monthly: monthly ? parseFloat(monthly) : 0,
         deadline: parseMonthYear(deadline) ? fmtMonth(parseMonthYear(deadline)) : '',
         linked,
       },
@@ -31,9 +29,9 @@ export default function StepGoalSetup({ onAction }) {
   const inputClass =
     'w-full px-4 py-3 border border-[#e5e7eb] rounded-lg text-sm text-[#111827] outline-none focus:border-[#0E3F2E] placeholder:text-[#9ca3af]';
 
-  // Reality-check connecting Target ↔ Monthly ↔ Deadline.
+  // Reality-check: target + deadline → the monthly it'll take.
   const today = new Date();
-  const insight = goalInsight(target, monthly, deadline);
+  const insight = goalInsight(target, deadline);
 
   return (
     <div>
@@ -54,34 +52,18 @@ export default function StepGoalSetup({ onAction }) {
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-5">
-          <div>
-            <label className="block text-sm font-medium text-[#374151] mb-1.5">Target Amount</label>
-            <div className="flex items-center border border-[#e5e7eb] rounded-lg overflow-hidden focus-within:border-[#0E3F2E]">
-              <span className="pl-3.5 text-[#9ca3af] text-sm">₹</span>
-              <input
-                type="text"
-                inputMode="numeric"
-                value={groupINR(target)}
-                onChange={(e) => setTarget(digitsOnly(e.target.value))}
-                placeholder="60,000"
-                className="flex-1 px-2 py-3 text-sm text-[#111827] outline-none"
-              />
-            </div>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-[#374151] mb-1.5">Monthly Amount</label>
-            <div className="flex items-center border border-[#e5e7eb] rounded-lg overflow-hidden focus-within:border-[#0E3F2E]">
-              <span className="pl-3.5 text-[#9ca3af] text-sm">₹</span>
-              <input
-                type="text"
-                inputMode="numeric"
-                value={groupINR(monthly)}
-                onChange={(e) => setMonthly(digitsOnly(e.target.value))}
-                placeholder="6,000"
-                className="flex-1 px-2 py-3 text-sm text-[#111827] outline-none"
-              />
-            </div>
+        <div>
+          <label className="block text-sm font-medium text-[#374151] mb-1.5">Target Amount</label>
+          <div className="flex items-center border border-[#e5e7eb] rounded-lg overflow-hidden focus-within:border-[#0E3F2E]">
+            <span className="pl-3.5 text-[#9ca3af] text-sm">₹</span>
+            <input
+              type="text"
+              inputMode="numeric"
+              value={groupINR(target)}
+              onChange={(e) => setTarget(digitsOnly(e.target.value))}
+              placeholder="60,000"
+              className="flex-1 px-2 py-3 text-sm text-[#111827] outline-none"
+            />
           </div>
         </div>
 

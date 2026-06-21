@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Plus, Calendar, ArrowDown, ArrowUp, ChevronsUpDown, X, RotateCcw, CreditCard, SearchX } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Plus, Calendar, ArrowDown, ArrowUp, ChevronsUpDown, RotateCcw, CreditCard, SearchX } from 'lucide-react';
 import { CATEGORIES, getCategoryChip } from '../../data/categories';
 import DuplicateBanner from './DuplicateBanner';
 import MerchantLogo from '../MerchantLogo';
@@ -76,6 +76,23 @@ export default function Spend({
   const usedCats = [...new Set(transactions.map((t) => t.category))];
   const usedMerchants = [...new Set(transactions.map((t) => t.merchant))].sort((a, b) => a.localeCompare(b));
   const dup = transactions.find((t) => t.dup);
+
+  // When a search query arrives (from global search), convert it into merchant filter selections.
+  useEffect(() => {
+    if (!searchQuery) return;
+    const q = searchQuery.trim().toLowerCase();
+    const matching = [...new Set(
+      transactions
+        .filter((t) => t.merchant.toLowerCase().includes(q) || catName(t.category).toLowerCase().includes(q))
+        .map((t) => t.merchant)
+    )];
+    // Defer so we don't setState synchronously in the effect body.
+    queueMicrotask(() => {
+      if (matching.length > 0) setMerchant((prev) => [...new Set([...prev, ...matching])]);
+      onClearSearch?.();
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchQuery]);
 
   // Click a header to sort by it; click again to flip direction.
   const toggleSort = (key) => {
@@ -194,18 +211,6 @@ export default function Spend({
           Add Expense
         </button>
       </div>
-
-      {search && (
-        <div className="flex items-center gap-2 mb-5">
-          <span className="inline-flex items-center gap-2 px-3 py-1.5 bg-[#F0F7F3] border border-[#0E3F2E]/15 rounded-lg text-sm text-[#0E3F2E] font-medium">
-            Search: “{searchQuery}”
-            <button onClick={onClearSearch} className="hover:text-[#0a3122]" aria-label="Clear search">
-              <X size={14} />
-            </button>
-          </span>
-          <span className="text-xs text-[#9ca3af]">{filtered.length} result{filtered.length === 1 ? '' : 's'}</span>
-        </div>
-      )}
 
       {dup && (
         <DuplicateBanner

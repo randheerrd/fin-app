@@ -4,7 +4,7 @@ import AddGoalModal from './AddGoalModal';
 import GoalCard from './GoalCard';
 import EmptyState from '../EmptyState';
 import InfoTip from '../InfoTip';
-import { goalProjection, effectiveSaved } from '../../lib/goalMath';
+import { goalProjection } from '../../lib/goalMath';
 
 const fmt = (n) => `₹${Math.round(n).toLocaleString('en-IN')}`;
 
@@ -22,6 +22,7 @@ export default function Goals({
   onAddGoal,
   onUpdateGoal,
   onDeleteGoal,
+  onContribute,
   sipDismissed,
   onDismissSip,
   onAcceptSip,
@@ -39,11 +40,9 @@ export default function Goals({
     setPrefill(null);
   };
 
-  const onTrackCount = goals.filter(
-    (g) => goalProjection({ ...g, saved: effectiveSaved(g, transactions) }).status !== 'at-risk'
-  ).length;
+  const onTrackCount = goals.filter((g) => goalProjection(g).status !== 'at-risk').length;
 
-  const totalSaved = goals.reduce((s, g) => s + effectiveSaved(g, transactions), 0);
+  const totalSaved = goals.reduce((s, g) => s + (g.saved || 0), 0);
   const shouldShowSip = !sipDismissed && transactions.length > 0;
 
   if (goals.length === 0 && !shouldShowSip) {
@@ -93,31 +92,32 @@ export default function Goals({
   return (
     <div className="min-h-full bg-white px-8 py-7">
       <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-2.5">
-          <p className="font-display text-4xl text-[#111827]">Goals</p>
-          <InfoTip size={18}>
+        <p className="font-display text-4xl text-[#111827]">Goals</p>
+        <div className="flex items-center gap-4">
+          <InfoTip size={17} align="right">
             <p className="text-sm font-semibold text-[#111827] mb-2">How a goal is tracked</p>
             <p className="mb-2">
-              <span className="font-medium text-[#374151]">Saved</span> = your starting balance plus auto-savings from the
-              categories linked to the goal.
+              <span className="font-medium text-[#374151]">Saved</span> only grows when you add money — either a manual save or
+              by accepting an "Available to save" suggestion. Every change is logged under "History".
             </p>
             <p className="mb-2">
-              <span className="font-medium text-[#374151]">Auto-savings</span> — for each linked category we take your usual
-              monthly spend (its historical average). Any month you spend below that, the difference is credited toward the goal.
+              <span className="font-medium text-[#374151]">Available to save</span> — for each linked category we compare this
+              month's spend to your usual monthly pace (its historical average). Anything you're under is offered to move to the
+              goal — nothing is credited automatically.
             </p>
             <p>
-              <span className="font-medium text-[#374151]">On pace / At risk</span> — we divide what's left by your monthly
-              amount and compare the finish date to your deadline.
+              <span className="font-medium text-[#374151]">Need / mo</span> — what's left ÷ the months until your deadline. It
+              drops as you save more.
             </p>
           </InfoTip>
+          <button
+            onClick={() => setShowAddModal(true)}
+            className="flex items-center gap-2 px-4 py-2.5 bg-[#0E3F2E] text-white text-sm font-medium rounded-lg hover:bg-[#0a3122] transition-colors"
+          >
+            <Plus size={16} />
+            Add Goal
+          </button>
         </div>
-        <button
-          onClick={() => setShowAddModal(true)}
-          className="flex items-center gap-2 px-4 py-2.5 bg-[#0E3F2E] text-white text-sm font-medium rounded-lg hover:bg-[#0a3122] transition-colors"
-        >
-          <Plus size={16} />
-          Add Goal
-        </button>
       </div>
 
       {goals.length > 0 && (
@@ -163,7 +163,13 @@ export default function Goals({
 
       <div className="space-y-5">
         {goals.map((goal) => (
-          <GoalCard key={goal.id} goal={goal} transactions={transactions} onEdit={() => setEditingGoal(goal)} />
+          <GoalCard
+            key={goal.id}
+            goal={goal}
+            transactions={transactions}
+            onEdit={() => setEditingGoal(goal)}
+            onContribute={onContribute}
+          />
         ))}
       </div>
 

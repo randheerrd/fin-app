@@ -22,19 +22,21 @@ export function parseMonthYear(str) {
 export const fmtMonth = (d) => d.toLocaleDateString('en-IN', { month: 'short', year: 'numeric' });
 export const toMonthValue = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
 
-const addMonths = (d, n) => new Date(d.getFullYear(), d.getMonth() + n, 1);
 const monthsBetween = (a, b) => (b.getFullYear() - a.getFullYear()) * 12 + (b.getMonth() - a.getMonth());
 const money = (n) => `₹${Math.round(n).toLocaleString('en-IN')}`;
 
-// "Linked rupee" tracking: for each linked category, money spent BELOW the
-// category's usual monthly pace (its historical average) is credited to the
-// goal. Returns { total, thisMonth, cats: [{ cat, saved }] } — all rounded ₹.
-export function linkedSavings(goal, transactions = []) {
+// "Available to save this month" — for each linked category, how far UNDER your
+// usual monthly pace you are right now (usual pace = the category's historical
+// monthly average, used as the implicit budget since the app has no per-category
+// budgets). This is a *suggestion* the user can move to the goal; nothing is
+// credited automatically. Amounts already moved this month (logged as 'auto'
+// contributions) are subtracted so the same surplus isn't offered twice.
+// Returns { total, cats: [{ cat, amount }] } — rounded ₹.
+export function availableToSave(goal, transactions = []) {
   const cats = goal?.linked || [];
-  if (cats.length === 0) return { total: 0, thisMonth: 0, cats: [] };
+  if (cats.length === 0) return { total: 0, cats: [] };
 
-  // category -> { 'YYYY-MM': spend }
-  const byCatMonth = {};
+  const byCatMonth = {}; // category -> { 'YYYY-MM': spend }
   for (const t of transactions) {
     if (t.atm || !cats.includes(t.category)) continue;
     const m = String(t.date).slice(0, 7);
@@ -43,139 +45,81 @@ export function linkedSavings(goal, transactions = []) {
 
   const now = new Date();
   const curMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-  const elapsed = now.getDate();
-  const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
 
+  const catBreakdown = [];
   let total = 0;
-  let thisMonth = 0;
-  const breakdown = [];
-
   for (const c of cats) {
     const months = byCatMonth[c] || {};
     const completed = Object.entries(months).filter(([m]) => m !== curMonth);
     if (completed.length === 0) continue;
-    const baseline = completed.reduce((s, [, v]) => s + v, 0) / completed.length; // usual monthly spend
-
-    let catSaved = 0;
-    for (const [, v] of completed) catSaved += Math.max(baseline - v, 0);
-    total += catSaved;
-    if (catSaved > 0) breakdown.push({ cat: c, saved: Math.round(catSaved) });
-
-    // Pace so far this month vs the prorated baseline.
-    const prorated = baseline * (elapsed / daysInMonth);
-    thisMonth += Math.max(prorated - (months[curMonth] || 0), 0);
+    const usual = completed.reduce((s, [, v]) => s + v, 0) / completed.length; // implicit budget
+    const under = Math.max(usual - (months[curMonth] || 0), 0); // under your usual pace this month
+    if (under > 0) {
+      catBreakdown.push({ cat: c, amount: Math.round(under) });
+      total += under;
+    }
   }
 
-  return { total: Math.round(total), thisMonth: Math.round(thisMonth), cats: breakdown };
+  // Don't re-offer surplus already moved this month.
+  const movedThisMonth = (goal.contributionLog || [])
+    .filter((e) => e.type === 'auto' && String(e.date).slice(0, 7) === curMonth)
+    .reduce((s, e) => s + (e.amount || 0), 0);
+
+  return {
+    total: Math.max(Math.round(total) - movedThisMonth, 0),
+    cats: catBreakdown.sort((a, b) => b.amount - a.amount),
+  };
 }
 
-// Effective saved = base balance + linked-category auto-savings (capped at target).
-export function effectiveSaved(goal, transactions = []) {
-  const auto = linkedSavings(goal, transactions).total;
-  return Math.min((goal.saved || 0) + auto, goal.target || 0);
-}
-
-// Forward-looking status for an existing goal (accounts for what's saved).
-// Returns { status, tone, text, eta? } where status is
-// 'done' | 'on-track' | 'at-risk' | 'planning'.
+// Deadline-driven status for an existing goal. The goal is defined by target +
+// deadline; the monthly amount needed is DERIVED from what's left and the time
+// remaining (so there's nothing for the user to over-specify or contradict).
+// Returns { status, tone, text, requiredMonthly } where status is
+// 'done' | 'on-track' | 'overdue' | 'planning'.
 export function goalProjection(goal) {
   const target = goal.target || 0;
   const saved = goal.saved || 0;
-  const monthly = goal.monthly || 0;
   const remaining = Math.max(target - saved, 0);
   const deadlineDate = parseMonthYear(goal.deadline);
   const today = new Date();
 
   if (target > 0 && remaining <= 0) {
-    return { status: 'done', tone: 'ok', text: 'Goal reached — nicely done! 🎉' };
+    return { status: 'done', tone: 'ok', requiredMonthly: 0, text: 'Goal reached — nicely done! 🎉' };
+  }
+  if (!deadlineDate) {
+    return { status: 'planning', tone: 'neutral', requiredMonthly: 0, text: 'Add a deadline to get a monthly target.' };
   }
 
-  if (monthly > 0) {
-    const monthsNeeded = Math.ceil(remaining / monthly);
-    const eta = addMonths(today, monthsNeeded);
-    if (deadlineDate) {
-      const slack = monthsBetween(eta, deadlineDate); // +ve = ahead of deadline
-      if (slack >= 0) {
-        return {
-          status: 'on-track',
-          tone: 'ok',
-          eta,
-          text: `On pace to finish by ${fmtMonth(eta)}${
-            slack > 0 ? ` — ${slack} month${slack > 1 ? 's' : ''} ahead of your deadline.` : ' — right on your deadline.'
-          }`,
-        };
-      }
-      const monthsToDeadline = Math.max(monthsBetween(today, deadlineDate), 0);
-      const shortfall = Math.max(remaining - monthly * monthsToDeadline, 0);
-      const required = monthsToDeadline > 0 ? Math.ceil(remaining / monthsToDeadline) : 0;
-      return {
-        status: 'at-risk',
-        tone: 'warn',
-        eta,
-        text: `At ${money(monthly)}/mo you'll be ${money(shortfall)} short by ${fmtMonth(deadlineDate)}. Save ${
-          required ? `${money(required)}/mo` : 'more'
-        } to make it.`,
-      };
-    }
+  const monthsLeft = monthsBetween(today, deadlineDate);
+  if (monthsLeft < 0) {
     return {
-      status: 'on-track',
-      tone: 'ok',
-      eta,
-      text: `On pace to finish by ${fmtMonth(eta)} (${monthsNeeded} month${monthsNeeded > 1 ? 's' : ''} to go).`,
+      status: 'overdue',
+      tone: 'warn',
+      requiredMonthly: remaining,
+      text: `Deadline passed — ${money(remaining)} still to go. Update the deadline?`,
     };
   }
 
-  // No monthly contribution set yet.
-  if (deadlineDate) {
-    const monthsToDeadline = Math.max(monthsBetween(today, deadlineDate), 0);
-    const required = monthsToDeadline > 0 ? Math.ceil(remaining / monthsToDeadline) : remaining;
-    return { status: 'planning', tone: 'neutral', text: `Set aside ${money(required)}/mo to hit your deadline of ${fmtMonth(deadlineDate)}.` };
-  }
-  return { status: 'planning', tone: 'neutral', text: 'Add a monthly amount to see your timeline.' };
+  const required = Math.ceil(remaining / Math.max(monthsLeft, 1));
+  return {
+    status: 'on-track',
+    tone: 'ok',
+    requiredMonthly: required,
+    text: `Save ${money(required)}/mo to hit ${fmtMonth(deadlineDate)}.`,
+  };
 }
 
-// Returns { tone: 'ok' | 'warn', text } or null when there's nothing to say yet.
-export function goalInsight(target, monthly, deadline) {
+// Reality-check for the create/edit form (deadline-driven): given a target and
+// deadline, what monthly does it take? Returns { tone, text } or null.
+export function goalInsight(target, deadline) {
   const t = parseFloat(target) || 0;
-  const m = parseFloat(monthly) || 0;
   if (t <= 0) return null;
-
   const deadlineDate = parseMonthYear(deadline);
-  const today = new Date();
+  if (!deadlineDate) return null;
 
-  if (m > 0) {
-    const projected = addMonths(today, Math.ceil(t / m));
-    if (deadlineDate) {
-      const slack = monthsBetween(projected, deadlineDate); // +ve = ahead of deadline
-      if (slack >= 0) {
-        return {
-          tone: 'ok',
-          text: `At ${money(m)}/mo you'll reach ${money(t)} by ${fmtMonth(projected)}${
-            slack > 0 ? ` — ${slack} month${slack > 1 ? 's' : ''} ahead of your deadline.` : ' — right on your deadline.'
-          }`,
-        };
-      }
-      const monthsToDeadline = Math.max(monthsBetween(today, deadlineDate), 0);
-      const required = monthsToDeadline > 0 ? Math.ceil(t / monthsToDeadline) : 0;
-      return {
-        tone: 'warn',
-        text: `At ${money(m)}/mo you'll have ${money(m * monthsToDeadline)} by ${fmtMonth(deadlineDate)} — short of ${money(
-          t
-        )}. Save ${required ? `${money(required)}/mo` : 'more'} to make it.`,
-      };
-    }
-    const months = Math.ceil(t / m);
-    return {
-      tone: 'ok',
-      text: `At ${money(m)}/mo you'll reach ${money(t)} by ${fmtMonth(projected)} (${months} month${months > 1 ? 's' : ''}).`,
-    };
-  }
+  const monthsLeft = monthsBetween(new Date(), deadlineDate);
+  if (monthsLeft < 0) return { tone: 'warn', text: 'Pick a future deadline.' };
 
-  if (deadlineDate) {
-    const monthsToDeadline = Math.max(monthsBetween(today, deadlineDate), 0);
-    const required = monthsToDeadline > 0 ? Math.ceil(t / monthsToDeadline) : t;
-    return { tone: 'ok', text: `To reach ${money(t)} by ${fmtMonth(deadlineDate)}, save about ${money(required)}/mo.` };
-  }
-
-  return null;
+  const required = Math.ceil(t / Math.max(monthsLeft, 1));
+  return { tone: 'ok', text: `Save ${money(required)}/mo to reach ${money(t)} by ${fmtMonth(deadlineDate)}.` };
 }

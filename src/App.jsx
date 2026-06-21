@@ -377,6 +377,7 @@ function App() {
   const addGoal = (goalData) => {
     const newGoal = {
       id: crypto.randomUUID(),
+      contributionLog: [],
       ...goalData,
       isNew: true,
       detected: false,
@@ -388,6 +389,22 @@ function App() {
   const updateGoal = (updated) => {
     setGoals((prev) => prev.map((g) => (g.id === updated.id ? { ...g, ...updated } : g)));
     showToast('Goal updated', 'success');
+  };
+
+  // Move an "available to save" surplus into a goal: bump saved + log it.
+  const contributeToGoal = (goalId, amount, entry) => {
+    setGoals((prev) =>
+      prev.map((g) =>
+        g.id === goalId
+          ? {
+              ...g,
+              saved: Math.min((g.saved || 0) + amount, g.target),
+              contributionLog: [...(g.contributionLog || []), entry],
+            }
+          : g
+      )
+    );
+    showToast(`₹${Math.round(amount).toLocaleString('en-IN')} moved to your goal`, 'success');
   };
 
   const deleteGoal = (id) => {
@@ -480,6 +497,7 @@ function App() {
             onAddGoal={addGoal}
             onUpdateGoal={updateGoal}
             onDeleteGoal={deleteGoal}
+            onContribute={contributeToGoal}
             sipDismissed={sipDismissed}
             onDismissSip={() => setSipDismissed(true)}
             onAcceptSip={(goal) => {

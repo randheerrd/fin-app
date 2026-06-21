@@ -3,7 +3,7 @@ import { X, Plus, Check, Trash2, AlertTriangle } from 'lucide-react';
 import { CATEGORIES } from '../../data/categories';
 import MonthYearPicker from '../MonthYearPicker';
 import { parseMonthYear, fmtMonth, toMonthValue, goalInsight } from '../../lib/goalMath';
-import { groupINR, digitsOnly } from '../../lib/utils';
+import { groupINR, digitsOnly, getToday } from '../../lib/utils';
 
 // Normalize an incoming deadline label ("Dec 2026") to the picker's "YYYY-MM".
 const initialDeadlineValue = (d) => {
@@ -22,27 +22,33 @@ export default function AddGoalModal({ onClose, onSave, onDelete, initial, force
   }, [onClose]);
   const [name, setName] = useState(initial?.name || '');
   const [target, setTarget] = useState(initial ? String(initial.target) : '');
-  const [monthly, setMonthly] = useState(initial?.monthly ? String(initial.monthly) : '');
   const [deadline, setDeadline] = useState(initialDeadlineValue(initial?.deadline));
   const [linked, setLinked] = useState(initial?.linked || []);
+  const [manualSave, setManualSave] = useState(''); // optional one-off deposit (edit mode)
 
-  const insight = goalInsight(target, monthly, deadline);
+  const insight = goalInsight(target, deadline);
 
   const toggleCategory = (catId) =>
     setLinked((prev) => (prev.includes(catId) ? prev.filter((c) => c !== catId) : [...prev, catId]));
 
   const handleSave = () => {
-    if (name && target) {
-      onSave({
-        ...(initial || {}),
-        name,
-        target: parseFloat(target),
-        saved: initial?.saved ?? 0,
-        monthly: monthly ? parseFloat(monthly) : 0,
-        deadline: parseMonthYear(deadline) ? fmtMonth(parseMonthYear(deadline)) : '',
-        linked,
-      });
-    }
+    if (!name || !target) return;
+    const manualNum = parseFloat(manualSave) || 0;
+    const baseSaved = initial?.saved ?? 0;
+    const baseLog = initial?.contributionLog || [];
+    const contributionLog =
+      manualNum > 0
+        ? [...baseLog, { id: crypto.randomUUID(), type: 'manual', label: 'Manual save added', amount: manualNum, date: getToday() }]
+        : baseLog;
+    onSave({
+      ...(initial || {}),
+      name,
+      target: parseFloat(target),
+      saved: baseSaved + manualNum,
+      deadline: parseMonthYear(deadline) ? fmtMonth(parseMonthYear(deadline)) : '',
+      linked,
+      contributionLog,
+    });
   };
 
   const inputClass =
@@ -87,42 +93,33 @@ export default function AddGoalModal({ onClose, onSave, onDelete, initial, force
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-[#374151] mb-1.5">Monthly Amount</label>
-              <input
-                type="text"
-                inputMode="numeric"
-                placeholder="6,000"
-                value={groupINR(monthly)}
-                onChange={(e) => setMonthly(digitsOnly(e.target.value))}
-                className={inputClass}
+              <label className="block text-sm font-medium text-[#374151] mb-1.5">Deadline</label>
+              <MonthYearPicker
+                value={deadline}
+                onChange={setDeadline}
+                min={today}
+                placeholder="Select month"
+                className={`${inputClass} text-left`}
               />
             </div>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-[#374151] mb-1.5">Deadline</label>
-            <MonthYearPicker
-              value={deadline}
-              onChange={setDeadline}
-              min={today}
-              placeholder="Select month"
-              className={`${inputClass} text-left`}
-            />
-            {insight && (
-              <p
-                className={`mt-2 text-xs flex items-start gap-1.5 ${
-                  insight.tone === 'ok' ? 'text-[#15803D]' : 'text-[#B45309]'
-                }`}
-              >
-                {insight.tone === 'ok' ? (
-                  <Check size={13} className="mt-px flex-shrink-0" />
-                ) : (
-                  <AlertTriangle size={13} className="mt-px flex-shrink-0" />
-                )}
-                {insight.text}
-              </p>
-            )}
-          </div>
+          {insight && (
+            <div
+              className={`flex items-start gap-2 rounded-xl px-4 py-3 border text-sm font-medium ${
+                insight.tone === 'ok'
+                  ? 'bg-[#F0F7F3] border-[#0E3F2E]/15 text-[#15803D]'
+                  : 'bg-[#FEF6F1] border-[#F08A5D]/25 text-[#B45309]'
+              }`}
+            >
+              {insight.tone === 'ok' ? (
+                <Check size={15} className="mt-px flex-shrink-0" />
+              ) : (
+                <AlertTriangle size={15} className="mt-px flex-shrink-0" />
+              )}
+              <span>{insight.text}</span>
+            </div>
+          )}
 
           <div>
             <label className="block text-sm font-medium text-[#374151] mb-2.5">
@@ -148,6 +145,24 @@ export default function AddGoalModal({ onClose, onSave, onDelete, initial, force
               })}
             </div>
           </div>
+
+          {isEdit && (
+            <div className="pt-4 border-t border-[#f3f4f6]">
+              <label className="block text-sm font-medium text-[#374151] mb-1.5">Add a manual save (optional)</label>
+              <div className="flex items-center border border-[#e5e7eb] rounded-lg overflow-hidden focus-within:border-[#0E3F2E]">
+                <span className="pl-3.5 text-[#9ca3af] text-sm">₹</span>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  placeholder="0"
+                  value={groupINR(manualSave)}
+                  onChange={(e) => setManualSave(digitsOnly(e.target.value))}
+                  className="flex-1 px-2 py-3 text-sm text-[#111827] outline-none"
+                />
+              </div>
+              <p className="text-xs text-[#9ca3af] mt-1.5">Adds to your saved total and logs a manual entry in your history.</p>
+            </div>
+          )}
         </div>
 
         <div className="px-8 py-5 flex items-center gap-3">

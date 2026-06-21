@@ -1,8 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
 import { Info } from 'lucide-react';
 
-// Small info icon that reveals an explanatory popover on hover/click.
-export default function InfoTip({ children, size = 16, align = 'left' }) {
+// Small info icon (optionally with a label / custom icon) that reveals a popover.
+export default function InfoTip({ children, size = 16, align = 'left', label, icon: Icon = Info, triggerClass }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
 
@@ -28,10 +28,16 @@ export default function InfoTip({ children, size = 16, align = 'left' }) {
         type="button"
         onClick={() => setOpen((o) => !o)}
         onMouseEnter={() => setOpen(true)}
-        aria-label="How this is calculated"
-        className="text-[#9ca3af] hover:text-[#0E3F2E] transition-colors"
+        aria-label="More info"
+        className={
+          triggerClass ||
+          `flex items-center gap-1.5 transition-colors ${
+            label ? 'text-sm font-medium text-[#6b7280] hover:text-[#0E3F2E]' : 'text-[#9ca3af] hover:text-[#0E3F2E]'
+          }`
+        }
       >
-        <Info size={size} />
+        <Icon size={size} />
+        {label && <span>{label}</span>}
       </button>
       {open && (
         <div

@@ -129,7 +129,40 @@ export const DEMO_BANKS = [
   { name: 'ICICI Bank', type: 'Saving account', mask: '··2291', synced: 'just now' },
 ];
 
+const ago = (days) => {
+  const d = new Date();
+  d.setDate(d.getDate() - days);
+  return d.toISOString().slice(0, 10);
+};
+
 export const DEMO_GOALS = [
-  { id: 'demo-1', name: 'Nepal Trip', target: 60000, saved: 18000, monthly: 6000, deadline: 'Nov 2026', linked: ['food', 'transport'], detected: false },
-  { id: 'demo-2', name: 'Emergency Fund', target: 200000, saved: 165000, monthly: 16000, deadline: 'Dec 2026', linked: ['groceries'], detected: false },
+  {
+    id: 'demo-1',
+    name: 'Nepal Trip',
+    target: 60000,
+    saved: 18000,
+    monthly: 6000,
+    deadline: 'Nov 2026',
+    linked: ['food', 'transport'],
+    detected: false,
+    contributionLog: [
+      { id: 'c1', type: 'manual', label: 'Manual save added', amount: 10000, date: ago(40) },
+      { id: 'c2', type: 'auto', label: 'From Food surplus', amount: 5000, date: ago(20), categoryId: 'food' },
+      { id: 'c3', type: 'auto', label: 'From Transport surplus', amount: 3000, date: ago(8), categoryId: 'transport' },
+    ],
+  },
+  {
+    id: 'demo-2',
+    name: 'Emergency Fund',
+    target: 200000,
+    saved: 165000,
+    monthly: 16000,
+    deadline: 'Dec 2026',
+    linked: ['groceries'],
+    detected: false,
+    contributionLog: [
+      { id: 'c4', type: 'manual', label: 'Manual save added', amount: 150000, date: ago(90) },
+      { id: 'c5', type: 'auto', label: 'From Groceries surplus', amount: 15000, date: ago(15), categoryId: 'groceries' },
+    ],
+  },
 ];

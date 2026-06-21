@@ -8,7 +8,7 @@ import {
   getDaysInMonth,
 } from '../../lib/utils';
 import { CATEGORIES, CHART_PALETTE, getCategoryChip } from '../../data/categories';
-import { effectiveSaved, goalProjection } from '../../lib/goalMath';
+import { goalProjection } from '../../lib/goalMath';
 import MerchantLogo from '../MerchantLogo';
 import CategoryIcon from '../CategoryIcon';
 import Dropdown from '../Dropdown';
@@ -43,17 +43,18 @@ function formatTxnDate(dateStr) {
 
 /* ---------- Donut (interactive) ---------- */
 function Donut({ segments, total, active, onHover, onSelect }) {
-  const r = 70;
-  const stroke = 26;
+  const r = 60;
+  const stroke = 22;
   const C = 2 * Math.PI * r;
+  const denom = total || 1; // avoid divide-by-zero; display still uses the real total
   const arcs = segments.map((s, i) => {
-    const len = (s.value / total) * C;
-    const start = segments.slice(0, i).reduce((a, x) => a + (x.value / total) * C, 0);
+    const len = (s.value / denom) * C;
+    const start = segments.slice(0, i).reduce((a, x) => a + (x.value / denom) * C, 0);
     return { ...s, len, start };
   });
   const act = active != null ? segments[active] : null;
   return (
-    <div className="relative" style={{ width: 180, height: 180 }}>
+    <div className="relative flex-shrink-0" style={{ width: 180, height: 180 }}>
       <svg width="180" height="180" viewBox="0 0 180 180" className="-rotate-90" onMouseLeave={() => onHover?.(null)}>
         {arcs.map((s, i) => (
           <circle
@@ -63,13 +64,13 @@ function Donut({ segments, total, active, onHover, onSelect }) {
             r={r}
             fill="none"
             stroke={s.color}
-            strokeWidth={active === i ? stroke + 6 : stroke}
+            strokeWidth={stroke}
             strokeDasharray={`${s.len} ${C - s.len}`}
             strokeDashoffset={-s.start}
-            opacity={active == null || active === i ? 1 : 0.35}
+            opacity={active == null || active === i ? 1 : 0.3}
             onMouseEnter={() => onHover?.(i)}
             onClick={() => onSelect?.(s)}
-            style={{ cursor: 'pointer', transition: 'opacity .15s, stroke-width .15s' }}
+            style={{ cursor: 'pointer', transition: 'opacity .15s' }}
           />
         ))}
       </svg>
@@ -216,7 +217,7 @@ export default function Dashboard({
   const topCat = topCategories[0];
 
   // Goals summary (shown to everyone — friendly empty state when none).
-  const totalSaved = goals.reduce((a, g) => a + effectiveSaved(g, transactions), 0);
+  const totalSaved = goals.reduce((a, g) => a + (g.saved || 0), 0);
   const totalTarget = goals.reduce((a, g) => a + (g.target || 0), 0);
   const goalProgress = totalTarget > 0 ? Math.round((totalSaved / totalTarget) * 100) : 0;
 
@@ -229,7 +230,7 @@ export default function Dashboard({
     ...donutTop.map(([id, value], i) => ({ id, label: catName(id), value, color: CHART_PALETTE[i] })),
     ...(othersValue > 0 ? [{ id: 'others', label: 'Others', value: othersValue, color: '#F59E0B' }] : []),
   ];
-  const donutTotal = segments.reduce((a, s) => a + s.value, 0) || 1;
+  const donutTotal = segments.reduce((a, s) => a + s.value, 0);
 
   // The categories rolled into "Others" = everything beyond the top 4 shown.
   const otherCatIds = sorted.slice(4).map(([id]) => id);
@@ -419,9 +420,10 @@ export default function Dashboard({
           ) : (
             <div className="space-y-5">
               {goals.slice(0, 3).map((goal) => {
-                const saved = effectiveSaved(goal, transactions);
+                const saved = goal.saved || 0;
                 const pct = Math.min(Math.round((saved / goal.target) * 100), 100);
-                const atRisk = goalProjection({ ...goal, saved }).status === 'at-risk';
+                const proj = goalProjection(goal);
+                const atRisk = proj.status === 'overdue';
                 return (
                   <div key={goal.id}>
                     <div className="flex items-center justify-between mb-2">
@@ -431,7 +433,7 @@ export default function Dashboard({
                           atRisk ? 'bg-orange-50 text-orange-600' : 'bg-green-50 text-green-700'
                         }`}
                       >
-                        {atRisk ? 'At risk' : 'On Track'}
+                        {atRisk ? 'Overdue' : 'On Track'}
                       </span>
                     </div>
                     <div className="w-full bg-[#f3f4f6] rounded-full h-2 overflow-hidden mb-1.5">
@@ -442,7 +444,7 @@ export default function Dashboard({
                     </div>
                     <p className="text-xs text-[#9ca3af]">
                       {fmt(saved)} saved of {fmt(goal.target)}
-                      {goal.monthly ? ` · adding ${fmt(goal.monthly)}/month` : ''}
+                      {proj.requiredMonthly ? ` · ${fmt(proj.requiredMonthly)}/mo to stay on track` : ''}
                     </p>
                   </div>
                 );
@@ -456,6 +458,12 @@ export default function Dashboard({
       <div className="grid grid-cols-2 gap-6 mb-6">
         <div className="border border-[#ECEEF0] rounded-2xl shadow-[0_1px_2px_rgba(16,24,40,0.04)] p-6">
           <p className="text-xs uppercase tracking-wide text-[#9ca3af] font-medium mb-4">Where It Went</p>
+          {segments.length === 0 ? (
+            <div className="flex flex-col items-center justify-center text-center py-10">
+              <p className="text-sm font-medium text-[#111827]">No spending yet</p>
+              <p className="text-xs text-[#9ca3af] mt-1">Your category breakdown will appear here.</p>
+            </div>
+          ) : (
           <div className="flex items-center gap-6">
             <Donut
               segments={segments}
@@ -487,6 +495,7 @@ export default function Dashboard({
               ))}
             </div>
           </div>
+          )}
         </div>
 
         <div className="border border-[#ECEEF0] rounded-2xl shadow-[0_1px_2px_rgba(16,24,40,0.04)] p-6">
