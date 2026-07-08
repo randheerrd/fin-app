@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
-import { X, Search, Building2, Lock, ChevronDown, Check, AlertCircle } from 'lucide-react';
+import { X, Search, Building2, Lock, ChevronDown, Check, AlertCircle, ShieldCheck } from 'lucide-react';
 import BrandLogo from '../BrandLogo';
 import { INDIAN_BANKS, ACCOUNT_TYPES } from '../../data/banks';
+import { aaEnabled, createConsent } from '../../lib/setu';
+import ConsentPolicyModal from './ConsentPolicyModal';
 
 // Demo AA name-verification: does this account number belong to the signed-in
 // user? Deterministic so the same number always gives the same result. We never
@@ -11,7 +13,13 @@ function isOwnAccount(digits) {
   return sum % 2 === 0;
 }
 
-export default function AddBankModal({ onClose, onAdd, holderName = 'Randheer Kumar' }) {
+export default function AddBankModal({ onClose, onAdd, holderName = 'Randheer Kumar', verifiedPhone = '' }) {
+  const [mode, setMode] = useState(aaEnabled ? 'aa' : 'manual'); // 'aa' | 'manual'
+  // Pre-fill with the number already verified at login — same identity, no
+  // second manual entry (and no second app-level OTP).
+  const [aaMobile, setAaMobile] = useState(verifiedPhone);
+  const [aaLoading, setAaLoading] = useState(false);
+  const [aaError, setAaError] = useState('');
   const [query, setQuery] = useState('');
   const [open, setOpen] = useState(false);
   useEffect(() => {
@@ -28,6 +36,26 @@ export default function AddBankModal({ onClose, onAdd, holderName = 'Randheer Ku
   const [acctNo, setAcctNo] = useState('');
   const [ifsc, setIfsc] = useState('');
   const [consent, setConsent] = useState(false);
+  const [showPolicy, setShowPolicy] = useState(false);
+
+  // Kicks off the real Setu AA consent flow: creates a consent, then redirects
+  // to Setu's hosted approval page. App.jsx picks the flow back up on return
+  // (looks for the `aa_pending` flag left in localStorage here).
+  const connectViaAA = async () => {
+    if (aaMobile.length !== 10) return;
+    setAaError('');
+    setAaLoading(true);
+    try {
+      const result = await createConsent(aaMobile, window.location.origin + window.location.pathname);
+      if (!result?.id || !result?.url) throw new Error(result?.errorMsg || result?.error || 'Could not start consent');
+      localStorage.setItem('aa_pending', JSON.stringify({ consentId: result.id }));
+      window.location.href = result.url;
+    } catch (e) {
+      console.error(e);
+      setAaError(e?.message || 'Could not connect right now. Try manual entry instead.');
+      setAaLoading(false);
+    }
+  };
 
   const list = INDIAN_BANKS.filter((b) => b.name.toLowerCase().includes(query.trim().toLowerCase()));
   const digits = acctNo.replace(/\D/g, '');
@@ -54,6 +82,74 @@ export default function AddBankModal({ onClose, onAdd, holderName = 'Randheer Ku
           </button>
         </div>
 
+        {aaEnabled && (
+          <div className="px-6 pb-3 flex gap-2">
+            <button
+              onClick={() => setMode('aa')}
+              className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${
+                mode === 'aa' ? 'bg-[#0E3F2E] text-white' : 'bg-[#f3f4f6] text-[#374151] hover:bg-[#e5e7eb]'
+              }`}
+            >
+              Connect automatically
+            </button>
+            <button
+              onClick={() => setMode('manual')}
+              className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${
+                mode === 'manual' ? 'bg-[#0E3F2E] text-white' : 'bg-[#f3f4f6] text-[#374151] hover:bg-[#e5e7eb]'
+              }`}
+            >
+              Enter manually
+            </button>
+          </div>
+        )}
+
+        {mode === 'aa' && aaEnabled ? (
+          <div className="px-6 py-4">
+            <div className="flex items-center gap-2.5 mb-4 px-3.5 py-3 bg-[#F0F7F3] border border-[#0E3F2E]/15 rounded-lg">
+              <ShieldCheck size={18} className="text-[#0E3F2E] flex-shrink-0" />
+              <p className="text-xs text-[#374151] leading-relaxed">
+                We'll redirect you to the RBI-regulated Account Aggregator network to approve read-only
+                access — no credentials shared with FinApp.{' '}
+                <button
+                  type="button"
+                  onClick={() => setShowPolicy(true)}
+                  className="underline font-medium hover:text-[#0E3F2E]"
+                >
+                  Learn more
+                </button>
+              </p>
+            </div>
+            <label className="block text-sm font-medium text-[#374151] mb-1.5">
+              {verifiedPhone ? 'Using your verified number' : 'Mobile number'}
+            </label>
+            <div className="flex items-center border border-[#e5e7eb] rounded-lg overflow-hidden focus-within:border-[#0E3F2E] mb-5">
+              <span className="pl-4 pr-2 py-3 text-[#6b7280] text-sm select-none">+91</span>
+              <input
+                autoFocus={!verifiedPhone}
+                type="tel"
+                inputMode="numeric"
+                maxLength={10}
+                value={aaMobile}
+                onChange={(e) => setAaMobile(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                placeholder="9876543210"
+                className="flex-1 pr-4 py-3 text-sm text-[#111827] outline-none placeholder:text-[#9ca3af]"
+              />
+            </div>
+            {verifiedPhone && (
+              <p className="text-xs text-[#9ca3af] -mt-4 mb-5">
+                Not you? You can edit the number above to link a different account.
+              </p>
+            )}
+            {aaError && <p className="text-red-500 text-xs mb-3">{aaError}</p>}
+            <button
+              onClick={connectViaAA}
+              disabled={aaMobile.length !== 10 || aaLoading}
+              className="w-full py-3 bg-[#0E3F2E] text-white text-sm font-semibold rounded-lg hover:bg-[#0a3122] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              {aaLoading ? 'Connecting…' : 'Connect bank account'}
+            </button>
+          </div>
+        ) : (
         <div className="px-6 py-2 space-y-5">
           {/* Searchable bank picker */}
           <div>
@@ -195,30 +291,42 @@ export default function AddBankModal({ onClose, onAdd, holderName = 'Randheer Ku
             />
             <span className="text-xs text-[#6b7280] leading-relaxed">
               I authorize FinApp to fetch this account’s transactions through the RBI-regulated Account
-              Aggregator network — read-only access, revocable anytime.
+              Aggregator network — read-only access, revocable anytime.{' '}
+              <button
+                type="button"
+                onClick={() => setShowPolicy(true)}
+                className="underline font-medium hover:text-[#0E3F2E]"
+              >
+                Learn more
+              </button>
             </span>
           </label>
         </div>
+        )}
 
-        <div className="px-6 py-5 flex items-center gap-3 border-t border-[#f3f4f6] mt-2">
-          <p className="text-xs text-[#9ca3af] flex items-center gap-1.5 flex-1">
-            <Lock size={12} /> Read-only
-          </p>
-          <button
-            onClick={onClose}
-            className="px-5 py-2.5 border border-[#e5e7eb] text-[#374151] text-sm font-medium rounded-lg hover:bg-[#f9fafb] transition-colors"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={submit}
-            disabled={!canAdd}
-            className="flex items-center gap-1.5 px-6 py-2.5 bg-[#0E3F2E] text-white text-sm font-medium rounded-lg hover:bg-[#0a3122] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-          >
-            {canAdd && <Check size={15} />}
-            Add account
-          </button>
-        </div>
+        {showPolicy && <ConsentPolicyModal onClose={() => setShowPolicy(false)} />}
+
+        {mode !== 'aa' && (
+          <div className="px-6 py-5 flex items-center gap-3 border-t border-[#f3f4f6] mt-2">
+            <p className="text-xs text-[#9ca3af] flex items-center gap-1.5 flex-1">
+              <Lock size={12} /> Read-only
+            </p>
+            <button
+              onClick={onClose}
+              className="px-5 py-2.5 border border-[#e5e7eb] text-[#374151] text-sm font-medium rounded-lg hover:bg-[#f9fafb] transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={submit}
+              disabled={!canAdd}
+              className="flex items-center gap-1.5 px-6 py-2.5 bg-[#0E3F2E] text-white text-sm font-medium rounded-lg hover:bg-[#0a3122] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              {canAdd && <Check size={15} />}
+              Add account
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

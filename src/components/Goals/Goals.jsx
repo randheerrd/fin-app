@@ -23,6 +23,8 @@ export default function Goals({
   onUpdateGoal,
   onDeleteGoal,
   onContribute,
+  onEditContribution,
+  onRemoveContribution,
   sipDismissed,
   onDismissSip,
   onAcceptSip,
@@ -47,7 +49,9 @@ export default function Goals({
     setPrefill(null);
   };
 
-  const onTrackCount = goals.filter((g) => goalProjection(g).status !== 'at-risk').length;
+  const activeGoals = goals.filter((g) => goalProjection(g).status !== 'done');
+  const completedGoals = goals.filter((g) => goalProjection(g).status === 'done');
+  const onTrackCount = activeGoals.filter((g) => goalProjection(g).status !== 'overdue').length;
 
   const totalSaved = goals.reduce((s, g) => s + (g.saved || 0), 0);
   const shouldShowSip = !sipDismissed && transactions.length > 0;
@@ -121,8 +125,8 @@ export default function Goals({
       {goals.length > 0 && (
         <div className="grid grid-cols-3 gap-5 mb-6">
           {[
-            { label: 'Active Goal', value: goals.length },
-            { label: 'On Track', value: `${onTrackCount}/${goals.length}` },
+            { label: 'Active Goals', value: activeGoals.length },
+            { label: 'On Track', value: activeGoals.length ? `${onTrackCount}/${activeGoals.length}` : '—' },
             { label: 'Total Saved', value: fmt(totalSaved) },
           ].map(({ label, value }) => (
             <div key={label} className="border border-[#ECEEF0] rounded-2xl shadow-[0_1px_2px_rgba(16,24,40,0.04)] px-6 py-5">
@@ -148,7 +152,24 @@ export default function Goals({
             </button>
             <button
               onClick={() => {
-                onAcceptSip({ name: 'SIP Index fund', target: 120000, saved: 30000, monthly: 10000, linked: [], detected: true });
+                onAcceptSip({
+                  name: 'SIP Index fund',
+                  target: 120000,
+                  saved: 30000,
+                  monthly: 10000,
+                  linked: [],
+                  detected: true,
+                  // Back the opening balance with a log entry so saved has an audit trail.
+                  contributionLog: [
+                    {
+                      id: crypto.randomUUID(),
+                      type: 'auto',
+                      label: 'Existing SIP balance',
+                      amount: 30000,
+                      date: new Date().toISOString().slice(0, 10),
+                    },
+                  ],
+                });
                 onDismissSip();
               }}
               className="px-4 py-2 bg-[#0E3F2E] text-white text-sm font-medium rounded-lg hover:bg-[#0a3122] transition-colors"
@@ -160,7 +181,7 @@ export default function Goals({
       )}
 
       <div className="space-y-5">
-        {goals.map((goal) => (
+        {activeGoals.map((goal) => (
           <GoalCard
             key={goal.id}
             goal={goal}
@@ -168,9 +189,33 @@ export default function Goals({
             allGoals={goals}
             onEdit={(focusDeadline) => openEdit(goal, focusDeadline)}
             onContribute={onContribute}
+            onEditContribution={onEditContribution}
+            onRemoveContribution={onRemoveContribution}
           />
         ))}
       </div>
+
+      {completedGoals.length > 0 && (
+        <div className="mt-8">
+          <p className="text-[11px] uppercase tracking-wide text-[#9ca3af] font-medium mb-3">
+            Completed · {completedGoals.length}
+          </p>
+          <div className="space-y-5">
+            {completedGoals.map((goal) => (
+              <GoalCard
+                key={goal.id}
+                goal={goal}
+                transactions={transactions}
+                allGoals={goals}
+                onEdit={(focusDeadline) => openEdit(goal, focusDeadline)}
+                onContribute={onContribute}
+                onEditContribution={onEditContribution}
+                onRemoveContribution={onRemoveContribution}
+              />
+            ))}
+          </div>
+        </div>
+      )}
 
       {showInfo && <GoalsInfoModal onClose={() => setShowInfo(false)} />}
 

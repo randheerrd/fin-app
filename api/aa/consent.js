@@ -13,14 +13,23 @@ export default async function handler(req, res) {
   const now = new Date();
   const sixMonthsAgo = new Date(now.getTime() - 1000 * 60 * 60 * 24 * 180);
 
-  // Setu AA v2 consent schema (verified live against the sandbox).
+  // Setu AA v2 consent schema — matches Setu's published FIU v2 /consents reference.
+  // `purpose` is mandated by the RBI/ReBIT AA spec (101 = wealth management, the
+  // standard default); `frequency` is required alongside PERIODIC fetchType.
   const body = {
-    consentDuration: { unit: 'MONTH', value: '12' },
+    consentDuration: { unit: 'MONTH', value: 12 },
     consentMode: 'STORE',
-    consentTypes: ['TRANSACTIONS', 'PROFILE', 'SUMMARY'],
+    consentTypes: ['PROFILE', 'SUMMARY', 'TRANSACTIONS'],
     fetchType: 'PERIODIC',
+    frequency: { unit: 'MONTH', value: 1 },
     fiTypes: ['DEPOSIT'],
     dataRange: { from: sixMonthsAgo.toISOString(), to: now.toISOString() },
+    purpose: {
+      code: '101',
+      text: 'Wealth management service',
+      category: { type: 'Personal Finance' },
+      refUri: 'https://api.rebit.org.in/aa/purpose/101.xml',
+    },
     // Virtual User Address. Sandbox test handle: <mobile>@onemoney
     vua: `${mobile}@onemoney`,
     ...(redirectUrl ? { redirectUrl } : {}),

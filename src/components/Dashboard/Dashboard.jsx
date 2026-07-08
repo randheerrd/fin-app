@@ -14,10 +14,19 @@ import CategoryIcon from '../CategoryIcon';
 import Dropdown from '../Dropdown';
 
 // Keep transactions within the selected period (mirrors the Spend tab).
+const isoOf = (dt) => `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
+const weekStart = (dt) => {
+  const d = new Date(dt);
+  d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); // Monday
+  d.setHours(0, 0, 0, 0);
+  return d;
+};
 const inPeriod = (dateStr, period) => {
   if (period === 'all') return true;
-  const d = new Date(dateStr);
   const now = new Date();
+  if (period === 'today') return dateStr === isoOf(now);
+  if (period === 'week') return dateStr >= isoOf(weekStart(now));
+  const d = new Date(dateStr);
   if (period === 'month') return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
   if (period === 'lastmonth') {
     const lm = new Date(now.getFullYear(), now.getMonth() - 1, 1);
@@ -30,7 +39,7 @@ const inPeriod = (dateStr, period) => {
   }
   return true;
 };
-const PERIOD_LABEL = { month: 'This Month', lastmonth: 'Last Month', '3m': 'Last 3 Months', all: 'All Time' };
+const PERIOD_LABEL = { today: 'Today', week: 'This Week', month: 'This Month', lastmonth: 'Last Month', '3m': 'Last 3 Months', all: 'All Time' };
 
 const fmt = (n) => `₹${Math.round(n).toLocaleString('en-IN')}`;
 const catName = (id) => CATEGORIES.find((c) => c.id === id)?.name || 'Other';
@@ -95,14 +104,16 @@ function Donut({ segments, total, active, onHover, onSelect }) {
 function WeeklyChart({ transactions }) {
   const [hover, setHover] = useState(null);
   const labels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-  const now = new Date();
-  const totals = labels.map((_, i) => {
-    const d = new Date(now);
-    const diff = now.getDay() === 0 ? i - 6 : i - (now.getDay() - 1);
-    d.setDate(now.getDate() + diff);
-    const dateStr = d.toISOString().split('T')[0];
-    return transactions.filter((t) => t.date === dateStr && !t.atm).reduce((s, t) => s + t.amount, 0);
-  });
+  // Aggregate spend by weekday across the (period-scoped) transactions, so the
+  // chart responds to the dashboard filter instead of only the current week.
+  const totals = labels.map(() => 0);
+  for (const t of transactions) {
+    if (t.atm) continue;
+    const d = new Date(t.date);
+    if (Number.isNaN(d.getTime())) continue;
+    const dow = d.getDay(); // 0 = Sun … 6 = Sat
+    totals[dow === 0 ? 6 : dow - 1] += t.amount;
+  }
   const max = Math.max(...totals, 1);
   const weekdaySum = totals.slice(0, 5).reduce((a, b) => a + b, 0);
   const weekendSum = totals[5] + totals[6];
@@ -111,7 +122,7 @@ function WeeklyChart({ transactions }) {
   const weekdayPct = 100 - weekendPct;
 
   return (
-    <div>
+    <div className="flex flex-col flex-1 min-h-0">
       <div className="flex items-center gap-6 mb-5">
         <div className="flex items-center gap-2">
           <span className="w-2.5 h-2.5 rounded-full bg-[#F08A5D]" />
@@ -124,25 +135,30 @@ function WeeklyChart({ transactions }) {
           <span className="text-xs font-semibold text-[#111827] ml-auto">{weekdayPct}%</span>
         </div>
       </div>
-      <div className="flex items-end justify-between gap-3 h-44">
+      {/* Bars fill the available height (the card stretches to match "Where It Went") */}
+      <div className="flex items-stretch justify-between gap-3 flex-1 min-h-[176px]">
         {labels.map((day, i) => {
           const isWeekend = i >= 5;
-          const h = Math.max((totals[i] / max) * 130, totals[i] > 0 ? 8 : 4);
+          const barPct = totals[i] > 0 ? Math.max((totals[i] / max) * 88, 5) : 1.5;
           return (
             <div
               key={day}
-              className="flex-1 flex flex-col items-center gap-2 cursor-default"
+              className="flex-1 flex flex-col items-center cursor-default"
               onMouseEnter={() => setHover(i)}
               onMouseLeave={() => setHover(null)}
             >
-              <span className={`text-[11px] font-medium ${hover === i ? 'text-[#111827]' : 'text-[#9ca3af]'}`}>
-                {totals[i] > 0 ? fmt(totals[i]) : ''}
+              <div className="flex-1 w-full flex flex-col justify-end items-center gap-1.5 min-h-0">
+                <span className={`text-[11px] font-medium ${hover === i ? 'text-[#111827]' : 'text-[#9ca3af]'}`}>
+                  {totals[i] > 0 ? fmt(totals[i]) : ''}
+                </span>
+                <div
+                  className={`w-full rounded-md transition-opacity ${isWeekend ? 'bg-[#F08A5D]' : 'bg-[#0E3F2E]'}`}
+                  style={{ height: `${barPct}%`, opacity: hover == null || hover === i ? 1 : 0.4 }}
+                />
+              </div>
+              <span className={`text-xs mt-2 ${hover === i ? 'text-[#111827] font-medium' : 'text-[#9ca3af]'}`}>
+                {day}
               </span>
-              <div
-                className={`w-full rounded-md transition-opacity ${isWeekend ? 'bg-[#F08A5D]' : 'bg-[#0E3F2E]'}`}
-                style={{ height: `${h}px`, opacity: hover == null || hover === i ? 1 : 0.4 }}
-              />
-              <span className={`text-xs ${hover === i ? 'text-[#111827] font-medium' : 'text-[#9ca3af]'}`}>{day}</span>
             </div>
           );
         })}
@@ -186,6 +202,9 @@ export default function Dashboard({
   onSetupBudget,
   onAddGoal,
   onCategorySelect,
+  leftoverDoneMonth,
+  onMoveLeftover,
+  onDismissLeftover,
 }) {
   const [activeSeg, setActiveSeg] = useState(null);
   const [period, setPeriod] = useState('month');
@@ -203,41 +222,103 @@ export default function Dashboard({
   const today = new Date();
   const dateLabel = today.toLocaleDateString('en-IN', { month: 'long', day: 'numeric', year: 'numeric' });
 
-  // Week-over-week delta (rough): this week vs prior week
-  const dayTotal = (offsetDays) => {
-    const d = new Date();
-    d.setDate(d.getDate() - offsetDays);
-    const s = d.toISOString().split('T')[0];
-    return transactions.filter((t) => t.date === s && !t.atm).reduce((a, t) => a + t.amount, 0);
-  };
-  const thisWeek = Array.from({ length: 7 }, (_, i) => dayTotal(i)).reduce((a, b) => a + b, 0);
-  const lastWeek = Array.from({ length: 7 }, (_, i) => dayTotal(i + 7)).reduce((a, b) => a + b, 0);
-  const weekDelta = lastWeek > 0 ? Math.round(((thisWeek - lastWeek) / lastWeek) * 100) : 0;
-
   const topCat = topCategories[0];
+
+  // Month-to-date vs the same point last month (same day-of-month), non-ATM spend.
+  const sumSpend = (startD, endD) =>
+    transactions
+      .filter((t) => !t.atm)
+      .reduce((a, t) => {
+        const d = new Date(t.date);
+        return d >= startD && d <= endD ? a + t.amount : a;
+      }, 0);
+  const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+  const thisMTD = sumSpend(monthStart, today);
+  const prevMonthStart = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+  const prevMonthDays = new Date(today.getFullYear(), today.getMonth(), 0).getDate();
+  const prevSamePoint = new Date(today.getFullYear(), today.getMonth() - 1, Math.min(today.getDate(), prevMonthDays));
+  const prevMTD = sumSpend(prevMonthStart, prevSamePoint);
+  const momDiff = thisMTD - prevMTD;
+  const prevMonthName = prevMonthStart.toLocaleDateString('en-IN', { month: 'long' });
+
+  // Daily average across the selected period (month → days elapsed; else data span).
+  const periodMs = periodTxns.map((t) => +new Date(t.date)).filter(Number.isFinite);
+  const spanDays = periodMs.length
+    ? Math.max(Math.round((Math.max(...periodMs) - Math.min(...periodMs)) / 86400000) + 1, 1)
+    : 1;
+  const avgDays = period === 'month' ? Math.max(dayOfMonth, 1) : spanDays;
+  const dailyAvg = totalSpent / avgDays;
+
+  // Headline caption: the same total spelled out — month-over-month trend (month
+  // view) + biggest category — so the big number isn't repeated as a stat card below.
+  const caption =
+    period === 'month'
+      ? `spent so far this month${
+          prevMTD > 0
+            ? `, ${fmt(Math.abs(momDiff))} ${momDiff < 0 ? 'less' : 'more'} than this time in ${prevMonthName}`
+            : ''
+        }`
+      : `spent · ${PERIOD_LABEL[period]}`;
 
   // Goals summary (shown to everyone — friendly empty state when none).
   const totalSaved = goals.reduce((a, g) => a + (g.saved || 0), 0);
   const totalTarget = goals.reduce((a, g) => a + (g.target || 0), 0);
   const goalProgress = totalTarget > 0 ? Math.round((totalSaved / totalTarget) * 100) : 0;
 
-  // Donut data: top 4 categories + Others
+  // Donut data: top 5 categories + Others
   const catTotals = getCategoryTotals(periodTxns);
   const sorted = Object.entries(catTotals).sort((a, b) => b[1] - a[1]);
-  const donutTop = sorted.slice(0, 4);
-  const othersValue = sorted.slice(4).reduce((a, [, v]) => a + v, 0);
+  const donutTop = sorted.slice(0, 5);
+  const othersValue = sorted.slice(5).reduce((a, [, v]) => a + v, 0);
   const segments = [
-    ...donutTop.map(([id, value], i) => ({ id, label: catName(id), value, color: CHART_PALETTE[i] })),
+    // 5th slot in the palette is amber — reserve amber for "Others", so give the
+    // 5th category another shade of green instead.
+    ...donutTop.map(([id, value], i) => ({ id, label: catName(id), value, color: i === 4 ? '#5FA777' : CHART_PALETTE[i] })),
     ...(othersValue > 0 ? [{ id: 'others', label: 'Others', value: othersValue, color: '#F59E0B' }] : []),
   ];
   const donutTotal = segments.reduce((a, s) => a + s.value, 0);
 
-  // The categories rolled into "Others" = everything beyond the top 4 shown.
-  const otherCatIds = sorted.slice(4).map(([id]) => id);
+  // The categories rolled into "Others" = everything beyond the top 5 shown.
+  const otherCatIds = sorted.slice(5).map(([id]) => id);
   // Open Spend filtered to the clicked category (or all "Others" categories).
   const selectSegment = (s) => onCategorySelect?.(s.id === 'others' ? otherCatIds : [s.id], period);
 
-  const thisMonthMax = Math.max(...topCategories.map((c) => c.amount), 1);
+  // Budget pacing for the "This Month" card: current daily pace and where that
+  // lands by month-end if it holds.
+  const dailyPace = Math.round(totalSpent / Math.max(dayOfMonth, 1));
+  const projectedMonthEnd = Math.round(dailyPace * daysInMonth);
+
+  // Month-end leftover: did LAST month finish under budget? If so, offer to move
+  // the unspent amount into a goal (re-appears each new month until handled).
+  const lmDate = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+  const lmKey = `${lmDate.getFullYear()}-${String(lmDate.getMonth() + 1).padStart(2, '0')}`;
+  const lmName = lmDate.toLocaleDateString('en-IN', { month: 'long' });
+  const lastMonthSpend = transactions
+    .filter((t) => !t.atm && String(t.date).slice(0, 7) === lmKey)
+    .reduce((s, t) => s + t.amount, 0);
+  const leftover = budgetSet ? Math.max(budget - lastMonthSpend, 0) : 0;
+  const leftoverGoals = goals.filter((g) => Math.max((g.target || 0) - (g.saved || 0), 0) > 0);
+  const showLeftover = leftover > 0 && leftoverGoals.length > 0 && leftoverDoneMonth !== lmKey;
+
+  // Over-budget helpers for the pacing card: how much over, the daily allowance to
+  // finish on budget, and which category is most above its usual pace ("the driver").
+  const overNow = budgetSet ? Math.max(totalSpent - budget, 0) : 0;
+  const allowance = daysLeft > 0 ? Math.round(budgetLeft / daysLeft) : budgetLeft;
+  const curKey = isoOf(today).slice(0, 7);
+  const catMonth = {};
+  transactions.forEach((t) => {
+    if (t.atm) return;
+    const mk = String(t.date).slice(0, 7);
+    (catMonth[t.category] ??= {})[mk] = (catMonth[t.category][mk] || 0) + t.amount;
+  });
+  let driver = null; // { cat, now, usual, excess }
+  Object.entries(catMonth).forEach(([cat, mm]) => {
+    const completed = Object.entries(mm).filter(([k]) => k !== curKey);
+    if (!completed.length) return;
+    const usual = completed.reduce((s, [, v]) => s + v, 0) / completed.length;
+    const excess = (mm[curKey] || 0) - usual;
+    if (excess > (driver?.excess ?? 0)) driver = { cat, now: mm[curKey] || 0, usual, excess };
+  });
 
   const filteredTransactions = activeFilter
     ? periodTxns.filter((t) => t.category === activeFilter)
@@ -250,10 +331,7 @@ export default function Dashboard({
         <div>
           <p className="text-sm text-[#6b7280] mb-1">{dateLabel}</p>
           <p className="text-[40px] font-bold text-[#111827] leading-none tracking-tight">{fmt(totalSpent)}</p>
-          <p className="text-sm text-[#6b7280] mt-2">
-            {period === 'month' ? 'spent so far this month' : `spent · ${PERIOD_LABEL[period]}`}
-            {topCat && <span> · Biggest spend: {catName(topCat.category)}</span>}
-          </p>
+          <p className="text-sm text-[#6b7280] mt-2">{caption}.</p>
         </div>
         <div className="flex items-center gap-3">
           <Dropdown
@@ -262,6 +340,8 @@ export default function Dashboard({
             leading={<Calendar size={15} className="text-[#9ca3af]" />}
             value={PERIOD_LABEL[period]}
             options={[
+              { label: 'Today', value: 'today' },
+              { label: 'This Week', value: 'week' },
               { label: 'This Month', value: 'month' },
               { label: 'Last Month', value: 'lastmonth' },
               { label: 'Last 3 Months', value: '3m' },
@@ -298,6 +378,43 @@ export default function Dashboard({
         </div>
       )}
 
+      {/* Month-end leftover → move it to a goal */}
+      {showLeftover && (
+        <div className="flex items-center justify-between gap-4 bg-[#F0F7F3] border border-[#0E3F2E]/15 rounded-xl px-5 py-4 mb-6">
+          <div>
+            <p className="text-sm font-semibold text-[#111827]">
+              You finished {lmName} {fmt(leftover)} under budget
+            </p>
+            <p className="text-xs text-[#9ca3af] mt-0.5">Move it to a goal so it doesn't quietly get spent.</p>
+          </div>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            {leftoverGoals.slice(0, 2).map((g) => (
+              <button
+                key={g.id}
+                onClick={() =>
+                  onMoveLeftover?.(g.id, leftover, lmKey, {
+                    id: crypto.randomUUID(),
+                    type: 'auto',
+                    label: `From ${lmName} leftover budget`,
+                    amount: leftover,
+                    date: new Date().toISOString().slice(0, 10),
+                  })
+                }
+                className="px-4 py-2 bg-[#0E3F2E] text-white text-sm font-medium rounded-lg hover:bg-[#0a3122] transition-colors"
+              >
+                {g.name}
+              </button>
+            ))}
+            <button
+              onClick={() => onDismissLeftover?.(lmKey)}
+              className="px-3 py-2 text-sm text-[#6b7280] hover:text-[#111827] transition-colors"
+            >
+              Not now
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Prompt to set income/budget when they weren't entered during onboarding */}
       {!budgetSet && (
         <div className="flex items-center justify-between gap-4 bg-[#F0F7F3] border border-[#0E3F2E]/15 rounded-xl px-5 py-4 mb-6">
@@ -314,14 +431,8 @@ export default function Dashboard({
         </div>
       )}
 
-      {/* Stat cards */}
+      {/* Stat cards — the total itself is the headline above, so it's not repeated here */}
       <div className="grid grid-cols-4 gap-5 mb-6">
-        <StatCard
-          label="Total Spent"
-          value={Math.round(totalSpent).toLocaleString('en-IN')}
-          sub={`${Math.abs(weekDelta)}% from last week`}
-          subColor={weekDelta >= 0 ? 'text-[#15803D]' : 'text-red-500'}
-        />
         <StatCard
           label="Budget Left"
           value={budgetSet ? budgetLeft.toLocaleString('en-IN') : '—'}
@@ -329,9 +440,14 @@ export default function Dashboard({
           subColor={budgetSet ? 'text-red-500' : 'text-[#9ca3af]'}
         />
         <StatCard
+          label="Daily Average"
+          value={Math.round(dailyAvg).toLocaleString('en-IN')}
+          sub={`over ${avgDays} day${avgDays === 1 ? '' : 's'}`}
+        />
+        <StatCard
           label="Top Categories"
           value={topCat ? catName(topCat.category) : '—'}
-          sub={topCat ? `${fmt(topCat.amount)} this month` : ''}
+          sub={topCat ? `${fmt(topCat.amount)} this period` : ''}
         />
         <StatCard
           label="Goals"
@@ -352,11 +468,19 @@ export default function Dashboard({
                 {fmt(totalSpent)} <span className="text-[#9ca3af] font-medium text-base">/ {fmt(budget)}</span>
               </p>
               <div className="w-full bg-[#e5e7eb] rounded-full h-2 overflow-hidden mb-2">
-                <div className="h-full bg-[#0E3F2E] rounded-full" style={{ width: `${Math.min(budgetUsed, 100)}%` }} />
+                <div
+                  className="h-full rounded-full"
+                  style={{
+                    width: `${Math.min(budgetUsed, 100)}%`,
+                    backgroundColor: budgetUsed > 100 ? '#DC2626' : budgetUsed >= 80 ? '#D97706' : '#0E3F2E',
+                  }}
+                />
               </div>
-              <div className="flex justify-between text-xs text-[#9ca3af]">
-                <span>{budgetUsed}% used</span>
-                <span>{daysLeft} days left</span>
+              <div className="flex justify-between text-xs">
+                <span className={budgetUsed > 100 ? 'text-red-500 font-medium' : 'text-[#9ca3af]'}>
+                  {budgetUsed > 100 ? `${budgetUsed - 100}% over budget` : `${budgetUsed}% used`}
+                </span>
+                <span className="text-[#9ca3af]">{daysLeft} days left</span>
               </div>
             </div>
           ) : (
@@ -373,28 +497,48 @@ export default function Dashboard({
               </button>
             </div>
           )}
-          <div className="space-y-4">
-            {topCategories.map((c) => (
-              <button
-                key={c.category}
-                onClick={() => onCategorySelect?.([c.category], period)}
-                className="w-full text-left group"
-              >
-                <div className="flex justify-between mb-1.5">
-                  <span className="text-sm text-[#374151] group-hover:text-[#0E3F2E] transition-colors">
-                    {catName(c.category)}
-                  </span>
-                  <span className="text-sm font-semibold text-[#111827]">{fmt(c.amount)}</span>
-                </div>
-                <div className="w-full bg-[#f3f4f6] rounded-full h-1.5 overflow-hidden">
-                  <div
-                    className="h-full bg-[#0E3F2E] rounded-full"
-                    style={{ width: `${(c.amount / thisMonthMax) * 100}%` }}
-                  />
-                </div>
-              </button>
-            ))}
-          </div>
+
+          {/* Budget pacing — the category breakdown lives in "Where It Went" below */}
+          {!budgetSet ? (
+            <p className="text-sm text-[#6b7280]">
+              Set a budget to see your spending pace and a month-end projection.
+            </p>
+          ) : period === 'month' ? (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-[#374151]">Spending pace</span>
+                <span className="text-sm font-semibold text-[#111827]">{fmt(dailyPace)}/day</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-[#374151]">{overNow > 0 ? 'Over budget' : 'Daily allowance'}</span>
+                <span className={`text-sm font-semibold ${overNow > 0 ? 'text-red-500' : 'text-[#111827]'}`}>
+                  {overNow > 0 ? `${fmt(overNow)} over` : `${fmt(allowance)}/day`}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-[#374151]">Projected month-end</span>
+                <span className={`text-sm font-semibold ${projectedMonthEnd > budget ? 'text-red-500' : 'text-[#15803D]'}`}>
+                  {fmt(projectedMonthEnd)}
+                </span>
+              </div>
+              <p className="text-xs text-[#9ca3af]">
+                {overNow > 0
+                  ? `You've used your budget — every rupee now adds to the overage.`
+                  : `Keep to ${fmt(allowance)}/day for the ${daysLeft} day${daysLeft === 1 ? '' : 's'} left to finish on budget.`}
+              </p>
+              {overNow > 0 && driver && (
+                <p className="text-xs rounded-lg bg-[#FEF6F1] border border-[#F08A5D]/25 px-3 py-2 text-[#B45309]">
+                  Biggest jump: <span className="font-semibold">{catName(driver.cat)}</span> — {fmt(driver.now)} vs ~
+                  {fmt(driver.usual)} usual.
+                </p>
+              )}
+            </div>
+          ) : (
+            <p className="text-sm text-[#6b7280]">
+              {fmt(totalSpent)} spent <span className="text-[#9ca3af]">· {PERIOD_LABEL[period]}</span>. Switch to
+              This Month for budget pacing.
+            </p>
+          )}
         </div>
 
         {/* Goals */}
@@ -421,19 +565,23 @@ export default function Dashboard({
             <div className="space-y-5">
               {goals.slice(0, 3).map((goal) => {
                 const saved = goal.saved || 0;
-                const pct = Math.min(Math.round((saved / goal.target) * 100), 100);
+                const pct = goal.target > 0 ? Math.min(Math.round((saved / goal.target) * 100), 100) : 0;
                 const proj = goalProjection(goal);
                 const atRisk = proj.status === 'overdue';
+                const badge =
+                  proj.status === 'done'
+                    ? { text: 'Reached', cls: 'bg-green-50 text-green-700' }
+                    : proj.status === 'overdue'
+                      ? { text: 'Overdue', cls: 'bg-orange-50 text-orange-600' }
+                      : proj.status === 'planning'
+                        ? { text: 'No deadline', cls: 'bg-[#f3f4f6] text-[#6b7280]' }
+                        : { text: 'On Track', cls: 'bg-green-50 text-green-700' };
                 return (
                   <div key={goal.id}>
                     <div className="flex items-center justify-between mb-2">
                       <p className="text-sm font-medium text-[#111827]">{goal.name}</p>
-                      <span
-                        className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${
-                          atRisk ? 'bg-orange-50 text-orange-600' : 'bg-green-50 text-green-700'
-                        }`}
-                      >
-                        {atRisk ? 'Overdue' : 'On Track'}
+                      <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${badge.cls}`}>
+                        {badge.text}
                       </span>
                     </div>
                     <div className="w-full bg-[#f3f4f6] rounded-full h-2 overflow-hidden mb-1.5">
@@ -464,7 +612,7 @@ export default function Dashboard({
               <p className="text-xs text-[#9ca3af] mt-1">Your category breakdown will appear here.</p>
             </div>
           ) : (
-          <div className="flex items-center gap-6">
+          <div className="flex items-start gap-6">
             <Donut
               segments={segments}
               total={donutTotal}
@@ -480,15 +628,18 @@ export default function Dashboard({
                   onMouseLeave={() => setActiveSeg(null)}
                   onClick={() => selectSegment(s)}
                   className={`w-full flex items-center justify-between py-2 px-2 rounded-lg transition-colors ${
-                    activeSeg === i ? 'bg-[#f9fafb]' : ''
+                    activeSeg === i ? 'bg-[#f9fafb]' : 'hover:bg-[#f9fafb]'
                   }`}
                 >
-                  <span className="flex items-center gap-2.5">
-                    <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: s.color }} />
-                    <span className="text-sm text-[#374151]">{s.label}</span>
+                  <span className="flex items-center gap-2.5 min-w-0">
+                    <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: s.color }} />
+                    <span className="text-sm text-[#374151] truncate">{s.label}</span>
                   </span>
-                  <span className="flex items-center gap-2">
+                  <span className="flex items-center gap-2 flex-shrink-0">
                     <span className="text-sm font-semibold text-[#111827]">{fmt(s.value)}</span>
+                    <span className="text-xs text-[#9ca3af] w-8 text-right">
+                      {donutTotal ? Math.round((s.value / donutTotal) * 100) : 0}%
+                    </span>
                     <ChevronRight size={15} className="text-[#d1d5db]" />
                   </span>
                 </button>
@@ -498,9 +649,9 @@ export default function Dashboard({
           )}
         </div>
 
-        <div className="border border-[#ECEEF0] rounded-2xl shadow-[0_1px_2px_rgba(16,24,40,0.04)] p-6">
+        <div className="border border-[#ECEEF0] rounded-2xl shadow-[0_1px_2px_rgba(16,24,40,0.04)] p-6 flex flex-col">
           <p className="text-xs uppercase tracking-wide text-[#9ca3af] font-medium mb-4">Weekly Spend</p>
-          <WeeklyChart transactions={transactions} />
+          <WeeklyChart transactions={periodTxns} />
         </div>
       </div>
 

@@ -107,7 +107,7 @@ export function goalProjection(goal) {
     return {
       status: 'overdue',
       tone: 'warn',
-      requiredMonthly: remaining,
+      requiredMonthly: 0,
       text: `Deadline passed — ${money(remaining)} still to go. Update the deadline?`,
     };
   }

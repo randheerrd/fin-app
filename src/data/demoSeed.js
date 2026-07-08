@@ -135,6 +135,21 @@ const ago = (days) => {
   return d.toISOString().slice(0, 10);
 };
 
+// Returning-user demo scenarios — injected on login for +91 9876543210 so every
+// product moment is visible without setup:
+//   • an untracked ATM withdrawal  → Dashboard "Untracked Cash · Split Amount"
+//   • a duplicate (user-added, then re-imported by the bank) → Spend duplicate banner
+export const DEMO_ATM_REMAINING = 4880; // ₹5,000 withdrawn, ₹120 already accounted for
+export function demoScenarioTxns() {
+  const dup = { merchant: 'Swiggy', category: 'food', amount: 540 };
+  return [
+    { id: crypto.randomUUID(), date: ago(2), merchant: 'ATM Withdrawal', category: 'cash', amount: 5000, source: 'bank', atm: true },
+    // The same payment twice: you added it, then HDFC imported it.
+    { id: crypto.randomUUID(), date: ago(1), merchant: dup.merchant, category: dup.category, amount: dup.amount, source: 'manual', atm: false },
+    { id: crypto.randomUUID(), date: ago(1), merchant: dup.merchant, category: dup.category, amount: dup.amount, source: 'bank', atm: false, dup: true },
+  ];
+}
+
 export const DEMO_GOALS = [
   {
     id: 'demo-1',
@@ -143,12 +158,14 @@ export const DEMO_GOALS = [
     saved: 18000,
     monthly: 6000,
     deadline: 'Nov 2026',
+    // 'food' is shared with Emergency Fund → its surplus is split across both goals.
     linked: ['food', 'transport'],
     detected: false,
+    // Auto-moves are dated to prior months so this month's surplus is still on offer.
     contributionLog: [
       { id: 'c1', type: 'manual', label: 'Manual save added', amount: 10000, date: ago(40) },
-      { id: 'c2', type: 'auto', label: 'From Food surplus', amount: 5000, date: ago(20), categoryId: 'food' },
-      { id: 'c3', type: 'auto', label: 'From Transport surplus', amount: 3000, date: ago(8), categoryId: 'transport' },
+      { id: 'c2', type: 'auto', label: 'From Food surplus', amount: 5000, date: ago(45), categoryId: 'food' },
+      { id: 'c3', type: 'auto', label: 'From Transport surplus', amount: 3000, date: ago(50), categoryId: 'transport' },
     ],
   },
   {
@@ -158,11 +175,12 @@ export const DEMO_GOALS = [
     saved: 165000,
     monthly: 16000,
     deadline: 'Dec 2026',
-    linked: ['groceries'],
+    // Shares 'food' with Nepal Trip to demonstrate proportional surplus allocation.
+    linked: ['groceries', 'food'],
     detected: false,
     contributionLog: [
       { id: 'c4', type: 'manual', label: 'Manual save added', amount: 150000, date: ago(90) },
-      { id: 'c5', type: 'auto', label: 'From Groceries surplus', amount: 15000, date: ago(15), categoryId: 'groceries' },
+      { id: 'c5', type: 'auto', label: 'From Groceries surplus', amount: 15000, date: ago(48), categoryId: 'groceries' },
     ],
   },
 ];

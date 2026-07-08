@@ -31,11 +31,21 @@ function DeltaTag({ pct, label }) {
   );
 }
 
-const PERIOD_LABEL = { month: 'This Month', lastmonth: 'Last Month', '3m': 'Last 3 Months', all: 'All Time' };
+const PERIOD_LABEL = { today: 'Today', week: 'This Week', month: 'This Month', lastmonth: 'Last Month', '3m': 'Last 3 Months', all: 'All Time' };
+const isoDate = (dt) => `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
+const startOfWeek = (ref) => {
+  const d = new Date(ref);
+  const back = (d.getDay() + 6) % 7; // Mon = start of week
+  d.setDate(d.getDate() - back);
+  d.setHours(0, 0, 0, 0);
+  return d;
+};
 const inPeriod = (dateStr, period) => {
   if (period === 'all') return true;
-  const d = new Date(dateStr);
   const now = new Date();
+  if (period === 'today') return dateStr === isoDate(now);
+  if (period === 'week') return dateStr >= isoDate(startOfWeek(now));
+  const d = new Date(dateStr);
   if (period === 'month') return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
   if (period === 'lastmonth') {
     const lm = new Date(now.getFullYear(), now.getMonth() - 1, 1);
@@ -59,7 +69,7 @@ function Card({ children }) {
 }
 
 export default function Insights({ transactions, manualMode, onLinkBank, onConnectBank }) {
-  const [period, setPeriod] = useState('all'); // show everything by default
+  const [period, setPeriod] = useState('month'); // default to the current month
 
   const hasEnoughData = transactions.length >= 7;
 
@@ -136,7 +146,26 @@ export default function Insights({ transactions, manualMode, onLinkBank, onConne
   };
   let prevTxns = [];
   let prevLabel = '';
-  if (period === 'lastmonth') {
+  let prevTotalOverride = null;
+  if (period === 'today') {
+    // Compare today against a "typical day" — the daily average over the last 30 days.
+    const cut = new Date(now);
+    cut.setDate(cut.getDate() - 30);
+    const todayStr = isoDate(now);
+    const recent = nonAtm.filter((t) => new Date(t.date) >= cut && t.date !== todayStr);
+    const dcount = new Set(recent.map((t) => t.date)).size || 1;
+    prevTotalOverride = Math.round(recent.reduce((s, t) => s + t.amount, 0) / dcount);
+    prevLabel = 'a typical day';
+  } else if (period === 'week') {
+    const s = startOfWeek(now);
+    const ps = new Date(s);
+    ps.setDate(ps.getDate() - 7);
+    prevTxns = nonAtm.filter((t) => {
+      const d = new Date(t.date);
+      return d >= ps && d < s;
+    });
+    prevLabel = 'last week';
+  } else if (period === 'lastmonth') {
     const p = new Date(now.getFullYear(), now.getMonth() - 2, 1);
     prevTxns = nonAtm.filter((t) => monthMatch(t.date, p.getFullYear(), p.getMonth()));
     prevLabel = p.toLocaleDateString('en-IN', { month: 'short' });
@@ -153,7 +182,7 @@ export default function Insights({ transactions, manualMode, onLinkBank, onConne
     prevTxns = nonAtm.filter((t) => monthMatch(t.date, p.getFullYear(), p.getMonth()));
     prevLabel = p.toLocaleDateString('en-IN', { month: 'short' });
   }
-  const prevTotal = prevTxns.reduce((s, t) => s + t.amount, 0);
+  const prevTotal = prevTotalOverride !== null ? prevTotalOverride : prevTxns.reduce((s, t) => s + t.amount, 0);
   const sumCat = (txns, id) => txns.filter((t) => t.category === id).reduce((s, t) => s + t.amount, 0);
   const pctChange = (cur, prev) => (prev ? Math.round(((cur - prev) / prev) * 100) : null);
   const momPct = pctChange(total, prevTotal);
@@ -174,10 +203,29 @@ export default function Insights({ transactions, manualMode, onLinkBank, onConne
 
   const resetPeriod = () => setPeriod('all');
 
+  // The *type* of insight adapts to the period: short windows drop the cards that
+  // only make sense over many weeks (weekday pattern, deep-dives, subscriptions).
+  const isToday = period === 'today';
+  const isShort = period === 'today' || period === 'week';
+
   const dayName = (i) => ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][i];
 
   return (
     <div className="min-h-full bg-white px-8 py-7">
+      {/* Feed-style entrance: cards fade/slide in and re-flow when the filter changes */}
+      <style>{`
+        .insights-feed > * { animation: feedCardIn .42s cubic-bezier(.2,.7,.3,1) both; }
+        .insights-feed > *:nth-child(1){animation-delay:.00s}
+        .insights-feed > *:nth-child(2){animation-delay:.05s}
+        .insights-feed > *:nth-child(3){animation-delay:.10s}
+        .insights-feed > *:nth-child(4){animation-delay:.15s}
+        .insights-feed > *:nth-child(5){animation-delay:.20s}
+        .insights-feed > *:nth-child(6){animation-delay:.25s}
+        .insights-feed > *:nth-child(7){animation-delay:.30s}
+        .insights-feed > *:nth-child(8){animation-delay:.35s}
+        .insights-feed > *:nth-child(n+9){animation-delay:.40s}
+        @keyframes feedCardIn { from { opacity:0; transform: translateY(12px) scale(.985); } to { opacity:1; transform:none; } }
+      `}</style>
       {/* Header + filters */}
       <div className="flex items-center justify-between mb-6">
         <p className="font-display text-4xl text-[#111827]">Insights</p>
@@ -207,7 +255,7 @@ export default function Insights({ transactions, manualMode, onLinkBank, onConne
           )}
         </EmptyState>
       ) : (
-        <div className="space-y-5 max-w-4xl">
+        <div key={period} className="space-y-5 max-w-4xl insights-feed">
           {/* Overview */}
           <Card>
             <div className="flex items-center gap-2 mb-2 text-[#0E3F2E]">
@@ -218,14 +266,25 @@ export default function Insights({ transactions, manualMode, onLinkBank, onConne
               </span>
             </div>
             <p className="text-sm text-[#6b7280] mb-4">
-              You've spent <span className="font-semibold text-[#111827]">{fmt(total)}</span> across {count} purchases —
-              that's about <span className="font-semibold text-[#111827]">{fmt(dailyAvg)}</span> a day.
+              {isToday ? (
+                <>
+                  You've spent <span className="font-semibold text-[#111827]">{fmt(total)}</span> today across {count}{' '}
+                  {count === 1 ? 'purchase' : 'purchases'}.
+                </>
+              ) : (
+                <>
+                  You've spent <span className="font-semibold text-[#111827]">{fmt(total)}</span> across {count} purchases —
+                  that's about <span className="font-semibold text-[#111827]">{fmt(dailyAvg)}</span> a day.
+                </>
+              )}
             </p>
             <div className="grid grid-cols-3 bg-[#f9fafb] rounded-xl overflow-hidden">
               {[
                 { value: fmt(total), label: 'Total spent' },
                 { value: count, label: 'Transactions' },
-                { value: fmt(dailyAvg), label: 'Daily average' },
+                isToday
+                  ? { value: fmt(prevTotal), label: 'Typical day' }
+                  : { value: fmt(dailyAvg), label: 'Daily average' },
               ].map((s, i) => (
                 <div key={s.label} className={`px-6 py-4 ${i > 0 ? 'border-l border-[#eef0f2]' : ''}`}>
                   <p className="text-lg font-bold text-[#111827]">{s.value}</p>
@@ -300,6 +359,7 @@ export default function Insights({ transactions, manualMode, onLinkBank, onConne
           )}
 
           {/* Top merchants — compact 2-column grid */}
+          {!isToday && topMerchants.length > 0 && (
           <Card>
             <p className="text-sm font-semibold text-[#111827] mb-1.5">Top merchants</p>
             <p className="text-sm text-[#6b7280] mb-4">
@@ -326,9 +386,10 @@ export default function Insights({ transactions, manualMode, onLinkBank, onConne
               ))}
             </div>
           </Card>
+          )}
 
-          {/* Category deep-dives — one per top category */}
-          {deepDives.map((dd) => {
+          {/* Category deep-dives — one per top category (volume-heavy, longer windows only) */}
+          {!isShort && deepDives.map((dd) => {
               const chip = getCategoryChip(dd.id);
               return (
                 <Card key={dd.id}>
@@ -382,7 +443,8 @@ export default function Insights({ transactions, manualMode, onLinkBank, onConne
             </Card>
           )}
 
-          {/* Weekday pattern */}
+          {/* Weekday pattern — needs more than a single day */}
+          {!isToday && (
           <Card>
             <div className="flex items-center gap-2 mb-2 text-[#4F5BD5]">
               <CalendarDays size={16} />
@@ -407,9 +469,10 @@ export default function Insights({ transactions, manualMode, onLinkBank, onConne
               })}
             </div>
           </Card>
+          )}
 
-          {/* Subscriptions */}
-          {subNames.length > 0 && (
+          {/* Subscriptions — monthly cadence, not meaningful for a single day */}
+          {!isToday && subNames.length > 0 && (
             <Card>
               <div className="mb-3">
                 <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-[#F3E8FF] text-[#7C3AED]">

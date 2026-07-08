@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { X, Target, Sparkles, Plus, TrendingUp } from 'lucide-react';
+import { X, Target, Sparkles, Scale, Plus, TrendingUp } from 'lucide-react';
 
 function Section({ icon: Icon, title, children }) {
   return (
@@ -27,7 +27,7 @@ export default function GoalsInfoModal({ onClose }) {
       className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4"
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
-      <div className="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-xl">
+      <div className="bg-white rounded-2xl max-w-[640px] w-full max-h-[90vh] overflow-y-auto shadow-xl">
         <div className="flex justify-between items-start px-8 pt-7 pb-2">
           <h2 className="font-display text-2xl text-[#111827]">How goals work</h2>
           <button onClick={onClose} className="p-1 hover:bg-[#f3f4f6] rounded-lg transition-colors">
@@ -48,6 +48,15 @@ export default function GoalsInfoModal({ onClose }) {
             it, that surplus is offered to move to the goal. When a category is linked to several goals, the surplus is{' '}
             <span className="font-medium text-[#374151]">split between them</span>, so the same rupee is never offered twice.
             Nothing moves on its own — you choose with <span className="font-medium text-[#374151]">Move to goal</span>.
+          </Section>
+
+          <Section icon={Scale} title="When two goals share a category">
+            If the same category's surplus could go to two goals, we split it by{' '}
+            <span className="font-medium text-[#374151]">how much each goal still has left to save</span>. The goal that
+            needs more gets the bigger share — so the same money is never promised to both.
+            <span className="block mt-2.5 rounded-lg bg-[#f9fafb] border border-[#eef0f2] px-3.5 py-2.5 font-mono text-[12px] text-[#374151] leading-relaxed">
+              this goal's share = surplus × ( what this goal needs ÷ what both goals need )
+            </span>
           </Section>
 
           <Section icon={Plus} title="Adding money & manual entries">

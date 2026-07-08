@@ -24,6 +24,8 @@ import {
   FRESH_DEMO_PHONE,
   isDemoPhone,
   generateDemoTransactions,
+  demoScenarioTxns,
+  DEMO_ATM_REMAINING,
   DEMO_BANKS,
   DEMO_GOALS,
 } from './data/demoSeed';
@@ -44,6 +46,9 @@ function App() {
   const [landingDone, setLandingDone] = useState(false);
   const [authScreen, setAuthScreen] = useState('landing'); // 'landing' | 'login'
   const [firebaseUser, setFirebaseUser] = useState(null);
+  // The phone verified at login/signup — reused for AA account detection so
+  // the user isn't asked to re-enter (and re-verify) their number a second time.
+  const [phone, setPhone] = useState('');
   const [hydrated, setHydrated] = useState(false); // user's saved data loaded
   // 'importing' when we return from the Setu approval page with a pending consent.
   const [aaImport, setAaImport] = useState(() =>
@@ -58,6 +63,9 @@ function App() {
   const [spendPeriod, setSpendPeriod] = useState('month'); // period carried over from the dashboard
   const [settingsEdit, setSettingsEdit] = useState(false); // open Settings straight into edit mode
   const [sipDismissed, setSipDismissed] = useState(false);
+  // 'YYYY-MM' of the most recent month whose leftover budget has been moved/dismissed,
+  // so the month-end "under budget" card re-appears each new month.
+  const [leftoverDoneMonth, setLeftoverDoneMonth] = useState('');
 
   // Modal state
   const [showAddExpense, setShowAddExpense] = useState(false);
@@ -84,13 +92,19 @@ function App() {
       }
       try {
         const consent = await waitForConsent(pending.consentId);
+        if (consent.status === 'REJECTED') {
+          setAaImport('rejected');
+          return;
+        }
         if (consent.status !== 'ACTIVE') throw new Error('Consent not approved');
         const session = await createSession(pending.consentId);
         const data = await waitForData(session.id);
         setTransactions(mapTransactions(data));
         if (pending.income) setIncome(pending.income);
         if (pending.budget) setBudget(pending.budget);
+        if (pending.goal) setGoals([{ id: crypto.randomUUID(), ...pending.goal, isNew: true, detected: false }]);
         setBanks([{ name: 'Linked Bank', type: 'Savings account', mask: '····', synced: 'just now' }]);
+        setManualMode(false);
         setLandingDone(true);
         setOnboardingDone(true);
         setActiveView('dashboard');
@@ -123,6 +137,7 @@ function App() {
         setRecurring(data.recurring ?? []);
         setAtmRemaining(data.atmRemaining ?? 0);
         setManualMode(!!data.manualMode);
+        setLeftoverDoneMonth(data.leftoverDoneMonth ?? '');
         setLandingDone(true);
         setOnboardingDone(true);
         setActiveView('dashboard');
@@ -151,11 +166,12 @@ function App() {
         recurring,
         atmRemaining,
         manualMode,
+        leftoverDoneMonth,
         onboardingDone: true,
       });
     }, 800);
     return () => clearTimeout(t);
-  }, [firebaseUser, hydrated, onboardingDone, income, budget, transactions, goals, banks, recurring, atmRemaining, manualMode]);
+  }, [firebaseUser, hydrated, onboardingDone, income, budget, transactions, goals, banks, recurring, atmRemaining, manualMode, leftoverDoneMonth]);
 
   // Reset scroll when view changes or onboarding completes
   useEffect(() => {
@@ -209,30 +225,35 @@ function App() {
     { name: 'ICICI Bank', type: 'Saving account', mask: '··2291', synced: 'just now' },
   ];
 
-  // Signup and login are distinct screens. With real Firebase both authenticate
-  // by phone OTP, but signup leads into onboarding while login hydrates the
-  // returning user's data (decided in the hydrate effect).
-  // Signup → straight into onboarding (phone verification happens at step 3,
-  // not as an upfront gate).
-  const handleSignup = () => setLandingDone(true);
-
   // Demo/test account — preload 6 months of mock data, skip onboarding.
   const seedDemo = () => {
-    setIncome(100000);
-    setBudget(45000);
-    setTransactions(generateDemoTransactions(6));
+    // Budget sits above the demo's ~₹1L/mo spend so the account is under budget by
+    // default (showcases the daily-allowance + month-end leftover-to-goal flows).
+    setIncome(150000);
+    setBudget(120000);
+    // Scenario rows (ATM withdrawal + duplicate) first so they sort to the top.
+    setTransactions(
+      [...demoScenarioTxns(), ...generateDemoTransactions(6)].sort((a, b) => new Date(b.date) - new Date(a.date))
+    );
     setGoals(DEMO_GOALS);
     setBanks(DEMO_BANKS);
+    setAtmRemaining(DEMO_ATM_REMAINING); // shows the "Untracked Cash · Split Amount" card
+    setManualMode(false);
     setHydrated(true);
     setLandingDone(true);
     setOnboardingDone(true);
     setActiveView('dashboard');
   };
 
-  const handleLogin = (phone) => {
+  // One phone+OTP flow for both new and returning users. Demo numbers are
+  // routed locally; for real Firebase auth, whether this is a new account
+  // (→ onboarding) or an existing one (→ dashboard) is decided by the hydrate
+  // effect once it checks Firestore for saved data under this uid.
+  const handleLogin = (loggedInPhone) => {
+    setPhone(loggedInPhone);
     // Demo numbers bypass Firebase — route them locally.
-    if (isDemoPhone(phone)) {
-      if (phone === FRESH_DEMO_PHONE) {
+    if (isDemoPhone(loggedInPhone)) {
+      if (loggedInPhone === FRESH_DEMO_PHONE) {
         // Always start a fresh new-user onboarding flow.
         setOnboardingDone(false);
         setLandingDone(true);
@@ -264,14 +285,16 @@ function App() {
     setHydrated(false);
     setAuthScreen('landing');
     setActiveView('dashboard');
+    setPhone('');
     localStorage.removeItem('aa_pending');
   };
 
   // Onboarding finished (after phone verification + bank discovery).
   //  • Linked at least one bank → pull in their data so the app is populated.
   //  • No bank linked (unchecked all) → manual mode, everything stays at 0.
-  const handleOnboardingComplete = ({ income: inc, budget: bud, goal, banks = [] } = {}) => {
+  const handleOnboardingComplete = ({ income: inc, budget: bud, goal, banks = [], phone: verifiedPhone } = {}) => {
     const hasBanks = banks.length > 0;
+    if (verifiedPhone) setPhone(verifiedPhone);
     setBanks(banks);
     setManualMode(!hasBanks);
     setTransactions(hasBanks ? generateDemoTransactions(6) : []);
@@ -398,13 +421,53 @@ function App() {
         g.id === goalId
           ? {
               ...g,
-              saved: Math.min((g.saved || 0) + amount, g.target),
+              // No target clamp: saved must stay exactly baseline + Σ(contributions)
+              // so later edits/removes adjust by the right delta (clamping desynced it).
+              saved: (g.saved || 0) + amount,
               contributionLog: [...(g.contributionLog || []), entry],
             }
           : g
       )
     );
-    showToast(`₹${Math.round(amount).toLocaleString('en-IN')} moved to your goal`, 'success');
+    showToast(`₹${Math.round(amount).toLocaleString('en-IN')} added to your goal`, 'success');
+  };
+
+  // Edit a logged contribution (manual entries only, from the History panel).
+  // saved is adjusted by the delta so the goal's baseline stays intact.
+  const editContribution = (goalId, entryId, patch) => {
+    setGoals((prev) =>
+      prev.map((g) => {
+        if (g.id !== goalId) return g;
+        const log = g.contributionLog || [];
+        const entry = log.find((e) => e.id === entryId);
+        if (!entry) return g;
+        const newAmount = patch.amount != null ? patch.amount : entry.amount;
+        const delta = newAmount - entry.amount;
+        return {
+          ...g,
+          saved: Math.max((g.saved || 0) + delta, 0),
+          contributionLog: log.map((e) => (e.id === entryId ? { ...e, ...patch } : e)),
+        };
+      })
+    );
+    showToast('Contribution updated', 'success');
+  };
+
+  const removeContribution = (goalId, entryId) => {
+    setGoals((prev) =>
+      prev.map((g) => {
+        if (g.id !== goalId) return g;
+        const log = g.contributionLog || [];
+        const entry = log.find((e) => e.id === entryId);
+        if (!entry) return g;
+        return {
+          ...g,
+          saved: Math.max((g.saved || 0) - (entry.amount || 0), 0),
+          contributionLog: log.filter((e) => e.id !== entryId),
+        };
+      })
+    );
+    showToast('Contribution removed', 'success');
   };
 
   const deleteGoal = (id) => {
@@ -422,23 +485,13 @@ function App() {
   const renderView = () => {
     if (!landingDone) {
       if (authScreen === 'login') {
-        return (
-          <LoginPage
-            mode="login"
-            onBack={() => setAuthScreen('landing')}
-            onSuccess={handleLogin}
-            onSwitch={() => {
-              setAuthScreen('landing');
-              handleSignup();
-            }}
-          />
-        );
+        return <LoginPage onBack={() => setAuthScreen('landing')} onSuccess={handleLogin} />;
       }
-      return <Landing onSignup={handleSignup} onGoToLogin={() => setAuthScreen('login')} />;
+      return <Landing onSignup={() => setAuthScreen('login')} onGoToLogin={() => setAuthScreen('login')} />;
     }
 
     if (!onboardingDone) {
-      return <OnboardingShell onComplete={handleOnboardingComplete} />;
+      return <OnboardingShell onComplete={handleOnboardingComplete} phone={phone} />;
     }
 
     switch (activeView) {
@@ -471,6 +524,12 @@ function App() {
               setSpendPeriod(p || 'month');
               setActiveView('spend');
             }}
+            leftoverDoneMonth={leftoverDoneMonth}
+            onMoveLeftover={(goalId, amount, monthKey, entry) => {
+              contributeToGoal(goalId, amount, entry);
+              setLeftoverDoneMonth(monthKey);
+            }}
+            onDismissLeftover={(monthKey) => setLeftoverDoneMonth(monthKey)}
           />
         );
       case 'spend':
@@ -498,6 +557,8 @@ function App() {
             onUpdateGoal={updateGoal}
             onDeleteGoal={deleteGoal}
             onContribute={contributeToGoal}
+            onEditContribution={editContribution}
+            onRemoveContribution={removeContribution}
             sipDismissed={sipDismissed}
             onDismissSip={() => setSipDismissed(true)}
             onAcceptSip={(goal) => {
@@ -541,6 +602,7 @@ function App() {
             onLinkBank={handleLinkBankFromSettings}
             onLogout={firebaseEnabled ? handleLogout : null}
             startInEdit={settingsEdit}
+            phone={phone}
           />
         );
       default:
@@ -558,10 +620,24 @@ function App() {
             <p className="font-display text-2xl text-[#111827] mb-1">Importing your transactions…</p>
             <p className="text-sm text-[#6b7280]">Fetching securely from your bank via the Account Aggregator.</p>
           </>
+        ) : aaImport === 'rejected' ? (
+          <>
+            <p className="font-display text-2xl text-[#111827] mb-2">Consent declined</p>
+            <p className="text-sm text-[#6b7280] mb-6">
+              You didn't approve the data-sharing request, so nothing was imported. You can try again anytime, or add
+              accounts manually instead.
+            </p>
+            <button
+              onClick={() => setAaImport('idle')}
+              className="px-5 py-2.5 bg-[#0E3F2E] text-white text-sm font-medium rounded-lg hover:bg-[#0a3122] transition-colors"
+            >
+              Back to start
+            </button>
+          </>
         ) : (
           <>
             <p className="font-display text-2xl text-[#111827] mb-2">Couldn’t import your data</p>
-            <p className="text-sm text-[#6b7280] mb-6">The bank connection wasn’t approved or timed out.</p>
+            <p className="text-sm text-[#6b7280] mb-6">The bank connection timed out or ran into an error.</p>
             <button
               onClick={() => setAaImport('idle')}
               className="px-5 py-2.5 bg-[#0E3F2E] text-white text-sm font-medium rounded-lg hover:bg-[#0a3122] transition-colors"
@@ -624,7 +700,7 @@ function App() {
       )}
 
       {showConnectBank && (
-        <AddBankModal onClose={() => setShowConnectBank(false)} onAdd={connectBank} />
+        <AddBankModal onClose={() => setShowConnectBank(false)} onAdd={connectBank} verifiedPhone={phone} />
       )}
 
       {/* Search */}

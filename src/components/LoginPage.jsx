@@ -1,63 +1,17 @@
 import { useState, useRef } from 'react';
 import { Lock, Pencil } from 'lucide-react';
 import FinAppLogo from './FinAppLogo';
-import { firebaseEnabled, sendOtp, confirmOtp, resetRecaptcha } from '../lib/firebase';
-import { isDemoPhone, demoCode } from '../data/demoSeed';
+import { useOtpAuth } from '../lib/useOtpAuth';
 
 const RECAPTCHA_ID = 'login-recaptcha';
 
-export default function LoginPage({ onBack, onSuccess, onSwitch, mode = 'login' }) {
-  const isSignup = mode === 'signup';
-  const [stage, setStage] = useState('phone');
-  const [phone, setPhone] = useState('');
+export default function LoginPage({ onBack, onSuccess }) {
+  const { stage, setStage, phone, setPhone, loading, error, resendCooldown, sendCode: handleSendCode, verify: doVerify } =
+    useOtpAuth(RECAPTCHA_ID);
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const confirmationRef = useRef(null);
   const refs = [useRef(), useRef(), useRef(), useRef(), useRef(), useRef()];
 
-  const handleSendCode = async () => {
-    if (phone.length !== 10) return;
-    setError('');
-    // Demo accounts (and local demo mode) skip Firebase + reCAPTCHA entirely.
-    if (!firebaseEnabled || isDemoPhone(phone)) {
-      setStage('otp');
-      return;
-    }
-    setLoading(true);
-    try {
-      confirmationRef.current = await sendOtp(phone, RECAPTCHA_ID);
-      setStage('otp');
-    } catch (e) {
-      console.error(e);
-      resetRecaptcha(); // so the next attempt builds a fresh verifier
-      setError(e?.code ? `Couldn't send code — ${e.code}` : e?.message || 'Could not send code.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const verify = async (code) => {
-    setError('');
-    if (isDemoPhone(phone)) {
-      if (code === demoCode(phone)) onSuccess(phone);
-      else setError('Invalid code. Please try again.');
-      return;
-    }
-    if (!firebaseEnabled) {
-      onSuccess(phone);
-      return;
-    }
-    setLoading(true);
-    try {
-      await confirmOtp(confirmationRef.current, code);
-      onSuccess(phone);
-    } catch (e) {
-      console.error(e);
-      setError('Invalid code. Please try again.');
-      setLoading(false);
-    }
-  };
+  const verify = (code) => doVerify(code, onSuccess);
 
   const handleOtp = (i, v) => {
     if (!/^\d*$/.test(v)) return;
@@ -79,11 +33,11 @@ export default function LoginPage({ onBack, onSuccess, onSwitch, mode = 'login' 
       <div className="flex-1 flex items-center justify-center px-6 pb-20">
         <div className="w-full max-w-sm">
           <h1 className="font-display text-4xl text-[#111827] mb-1.5">
-            {stage === 'otp' ? 'Enter the code' : isSignup ? 'Create your account' : 'Log in'}
+            {stage === 'otp' ? 'Enter the code' : 'Continue to FinApp'}
           </h1>
           <p className="text-sm text-[#6b7280] mb-8 flex items-center gap-1.5">
             {stage === 'phone' ? (
-              isSignup ? 'Sign up with your phone number.' : 'Continue with your phone number.'
+              'One phone number for both new and returning accounts.'
             ) : (
               <>
                 Sent to +91 {phone}
@@ -147,8 +101,27 @@ export default function LoginPage({ onBack, onSuccess, onSwitch, mode = 'login' 
                 disabled={otp.some((d) => !d) || loading}
                 className="w-full py-3 bg-[#0E3F2E] text-white text-sm font-semibold rounded-lg hover:bg-[#0a3122] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
               >
-                {loading ? 'Verifying…' : isSignup ? 'Verify & continue' : 'Verify & log in'}
+                {loading ? 'Verifying…' : 'Verify & continue'}
               </button>
+              <p className="text-sm text-[#6b7280] text-center mt-4">
+                {resendCooldown > 0 ? (
+                  <>
+                    Resend code in {Math.floor(resendCooldown / 60)}:
+                    {String(resendCooldown % 60).padStart(2, '0')}
+                  </>
+                ) : (
+                  <>
+                    Didn't get it?{' '}
+                    <button
+                      onClick={handleSendCode}
+                      disabled={loading}
+                      className="text-[#0E3F2E] font-semibold hover:underline disabled:opacity-40"
+                    >
+                      Resend code
+                    </button>
+                  </>
+                )}
+              </p>
             </>
           )}
 
@@ -157,14 +130,7 @@ export default function LoginPage({ onBack, onSuccess, onSwitch, mode = 'login' 
 
           <p className="text-xs text-[#9ca3af] flex items-center gap-1.5 mt-4">
             <Lock size={11} />
-            {firebaseEnabled ? 'Phone login · OTP via SMS' : 'Phone login · OTP-secured (demo)'}
-          </p>
-
-          <p className="text-sm text-[#6b7280] mt-8">
-            {isSignup ? 'Already have an account? ' : 'New to FinApp? '}
-            <button onClick={onSwitch} className="text-[#0E3F2E] font-semibold hover:underline">
-              {isSignup ? 'Log in' : 'Create an account'}
-            </button>
+            Phone login · OTP-secured
           </p>
         </div>
       </div>

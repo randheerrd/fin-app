@@ -7,8 +7,8 @@ import { CATEGORIES } from '../../data/categories';
 const catName = (id) => CATEGORIES.find((c) => c.id === id)?.name || 'Other';
 
 const FORMATS = [
-  { id: 'csv', label: 'CSV', desc: 'Plain spreadsheet file', icon: FileText },
-  { id: 'excel', label: 'Excel', desc: 'Opens in Excel / Sheets', icon: FileSpreadsheet },
+  { id: 'csv', label: 'CSV', desc: 'Plain comma-separated file', icon: FileText },
+  { id: 'excel', label: 'Excel', desc: 'Excel-friendly CSV (UTF-8)', icon: FileSpreadsheet },
   { id: 'pdf', label: 'PDF', desc: 'Print-ready document', icon: FileType },
 ];
 
@@ -18,6 +18,7 @@ export default function ExportDataModal({ transactions = [], onClose }) {
   const [from, setFrom] = useState('');
   const [to, setTo] = useState(getToday());
   const [format, setFormat] = useState('csv');
+  const [error, setError] = useState('');
 
   useEffect(() => {
     const h = (e) => e.key === 'Escape' && onClose();
@@ -46,12 +47,18 @@ export default function ExportDataModal({ transactions = [], onClose }) {
     URL.revokeObjectURL(url);
   };
 
-  const exportCSV = () => {
-    const csv = [HEADERS, ...dataRows]
+  const csvString = () =>
+    [HEADERS, ...dataRows]
       .map((r) => r.map((c) => `"${String(c ?? '').replace(/"/g, '""')}"`).join(','))
       .join('\n');
-    download(new Blob([csv], { type: 'text/csv' }), 'finapp-transactions.csv');
-  };
+
+  const exportCSV = () => download(new Blob([csvString()], { type: 'text/csv' }), 'finapp-transactions.csv');
+
+  // A real Excel-friendly file: UTF-8 BOM + CSV opens cleanly in Excel/Sheets with
+  // ₹ and names intact — no "format doesn't match extension" warning the old .xls
+  // HTML-table hack produced.
+  const exportExcel = () =>
+    download(new Blob(['﻿' + csvString()], { type: 'text/csv;charset=utf-8' }), 'finapp-transactions.csv');
 
   const esc = (s) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;');
   const tableHTML = () =>
@@ -59,14 +66,9 @@ export default function ExportDataModal({ transactions = [], onClose }) {
     dataRows.map((r) => `<tr>${r.map((c) => `<td>${esc(c)}</td>`).join('')}</tr>`).join('') +
     `</tbody></table>`;
 
-  const exportExcel = () => {
-    const html = `<html><head><meta charset="utf-8"></head><body>${tableHTML()}</body></html>`;
-    download(new Blob([html], { type: 'application/vnd.ms-excel' }), 'finapp-transactions.xls');
-  };
-
   const exportPDF = () => {
     const win = window.open('', '_blank');
-    if (!win) return;
+    if (!win) return false;
     const rangeLabel = `${from || 'beginning'} → ${to || 'today'}`;
     win.document.write(`<html><head><title>FinApp transactions</title><style>
       body{font-family:Inter,-apple-system,sans-serif;padding:28px;color:#111827}
@@ -84,13 +86,21 @@ export default function ExportDataModal({ transactions = [], onClose }) {
     win.document.close();
     win.focus();
     win.print();
+    return true;
   };
 
   const handleExport = () => {
     if (rows.length === 0) return;
-    if (format === 'csv') exportCSV();
-    else if (format === 'excel') exportExcel();
-    else exportPDF();
+    if (format === 'pdf') {
+      if (!exportPDF()) {
+        setError('Couldn’t open the print window — allow pop-ups for this site, or export as CSV/Excel.');
+        return;
+      }
+    } else if (format === 'excel') {
+      exportExcel();
+    } else {
+      exportCSV();
+    }
     onClose();
   };
 
@@ -133,7 +143,10 @@ export default function ExportDataModal({ transactions = [], onClose }) {
                 return (
                   <button
                     key={f.id}
-                    onClick={() => setFormat(f.id)}
+                    onClick={() => {
+                      setFormat(f.id);
+                      setError('');
+                    }}
                     className={`relative flex flex-col items-start gap-2 p-3.5 rounded-xl border text-left transition-colors ${
                       active ? 'border-[#0E3F2E] bg-[#F0F7F3]' : 'border-[#e5e7eb] hover:bg-[#f9fafb]'
                     }`}
@@ -155,6 +168,8 @@ export default function ExportDataModal({ transactions = [], onClose }) {
           <p className="text-xs text-[#9ca3af]">
             {rows.length} transaction{rows.length === 1 ? '' : 's'} in this range.
           </p>
+
+          {error && <p className="text-xs text-red-500">{error}</p>}
         </div>
 
         <div className="px-8 py-5 flex items-center justify-end gap-3">

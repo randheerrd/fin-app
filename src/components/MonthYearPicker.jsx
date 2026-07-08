@@ -57,7 +57,7 @@ export default function MonthYearPicker({ value, onChange, min, placeholder = 'S
           setViewYear(sel?.year ?? Math.max(today.getFullYear(), minYear === -Infinity ? today.getFullYear() : minYear));
           setOpen((o) => !o);
         }}
-        className={`flex items-center justify-between gap-2 ${className} ${open ? 'border-[#0E3F2E]' : ''}`}
+        className={`flex items-center justify-between gap-2 ${className} ${open ? 'border-[#0E3F2E] ring-2 ring-[#0E3F2E]/20' : ''}`}
       >
         <span className={label ? 'text-[#111827]' : 'text-[#9ca3af]'}>{label || placeholder}</span>
         <Calendar size={16} className="text-[#9ca3af] flex-shrink-0" />

@@ -3,7 +3,6 @@ import FinAppLogo from '../FinAppLogo';
 import StepPathChoice from './StepPathChoice';
 import StepTrackSetup from './StepTrackSetup';
 import StepGoalSetup from './StepGoalSetup';
-import StepVerify from './StepVerify';
 import StepDiscovery from './StepDiscovery';
 import StepNoAccounts from './StepNoAccounts';
 import StepAccountSelect from './StepAccountSelect';
@@ -14,12 +13,13 @@ const STEP_TO_DOT = {
   path: 1,
   'track-setup': 2,
   'goal-setup': 2,
-  verify: 3,
-  'account-select': 4,
-  consent: 4,
+  'account-select': 3,
+  consent: 3,
 };
 
-export default function OnboardingShell({ onComplete }) {
+// `phone` is already verified before onboarding starts (single phone+OTP
+// screen shared by login and signup) — no separate verify step needed here.
+export default function OnboardingShell({ onComplete, phone }) {
   const [step, setStep] = useState('path');
   const [path, setPath] = useState(null);
   // 0 = not set. The track path fills these; the goal path leaves them empty
@@ -27,7 +27,6 @@ export default function OnboardingShell({ onComplete }) {
   const [income, setIncome] = useState(0);
   const [budget, setBudget] = useState(0);
   const [goal, setGoal] = useState(null);
-  const [phone, setPhone] = useState('');
   const [foundAccounts, setFoundAccounts] = useState([]);
   const [selectedAccounts, setSelectedAccounts] = useState([]);
 
@@ -48,7 +47,7 @@ export default function OnboardingShell({ onComplete }) {
         setIncome(data.income);
         setBudget(data.budget);
       }
-      setStep('verify');
+      setStep('discovery');
     } else {
       setStep('path'); // "Back"
     }
@@ -57,16 +56,10 @@ export default function OnboardingShell({ onComplete }) {
   const handleGoal = (action, data) => {
     if (action === 'continue') {
       setGoal(data.goal);
-      setStep('verify');
+      setStep('discovery');
     } else {
       setStep('path'); // "Back"
     }
-  };
-
-  // After the number is verified, discover the bank accounts linked to it.
-  const handleVerified = (verifiedPhone) => {
-    setPhone(verifiedPhone || '');
-    setStep('discovery');
   };
 
   const backToNumbers = () => setStep(path === 'goal' ? 'goal-setup' : 'track-setup');
@@ -94,7 +87,7 @@ export default function OnboardingShell({ onComplete }) {
     setSelectedAccounts((prev) => [...prev, true]);
   };
 
-  const finish = (banks = []) => onComplete({ income, budget, goal, banks });
+  const finish = (banks = []) => onComplete({ income, budget, goal, banks, phone });
 
   const handleImportComplete = () => {
     const banks = foundAccounts
@@ -114,7 +107,7 @@ export default function OnboardingShell({ onComplete }) {
           <div className="w-full min-h-full flex flex-col items-center px-4 pt-24 pb-16">
             {showDots && (
               <div className="flex justify-center gap-2.5 mb-12">
-                {[1, 2, 3, 4].map((i) => (
+                {[1, 2, 3].map((i) => (
                   <div
                     key={i}
                     className={`w-2.5 h-2.5 rounded-full transition-colors ${
@@ -129,12 +122,18 @@ export default function OnboardingShell({ onComplete }) {
               {baseStep === 'path' && <StepPathChoice onChoose={handlePathChoice} />}
               {baseStep === 'track-setup' && <StepTrackSetup onAction={handleNumbers} />}
               {baseStep === 'goal-setup' && <StepGoalSetup onAction={handleGoal} />}
-              {baseStep === 'verify' && <StepVerify onVerified={handleVerified} onBack={backToNumbers} />}
               {baseStep === 'discovery' && (
-                <StepDiscovery mobile={phone} token="" onComplete={handleDiscoveryComplete} />
+                <StepDiscovery
+                  mobile={phone}
+                  token=""
+                  income={income}
+                  budget={budget}
+                  goal={goal}
+                  onComplete={handleDiscoveryComplete}
+                />
               )}
               {baseStep === 'no-accounts' && (
-                <StepNoAccounts onTryAgain={() => setStep('verify')} onManual={() => finish([])} />
+                <StepNoAccounts onTryAgain={() => setStep('discovery')} onManual={() => finish([])} />
               )}
               {baseStep === 'account-select' && (
                 <StepAccountSelect
@@ -145,6 +144,7 @@ export default function OnboardingShell({ onComplete }) {
                   onSkip={() => finish([])}
                   onBack={backToNumbers}
                   onAddAnother={addAnotherAccount}
+                  phone={phone}
                 />
               )}
               {baseStep === 'import' && <StepImport onComplete={handleImportComplete} />}

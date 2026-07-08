@@ -10,6 +10,14 @@ import AddExpenseModal from '../modals/AddExpenseModal';
 
 const catName = (id) => CATEGORIES.find((c) => c.id === id)?.name || 'Other';
 
+const isoOf = (dt) => `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
+const weekStart = (dt) => {
+  const d = new Date(dt);
+  d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); // Monday
+  d.setHours(0, 0, 0, 0);
+  return d;
+};
+
 function formatDate(dateStr) {
   const d = new Date(dateStr);
   if (isNaN(d)) return dateStr;
@@ -128,8 +136,10 @@ export default function Spend({
 
   const inPeriod = (dateStr) => {
     if (period === 'all') return true;
-    const d = new Date(dateStr);
     const now = new Date();
+    if (period === 'today') return dateStr === isoOf(now);
+    if (period === 'week') return dateStr >= isoOf(weekStart(now));
+    const d = new Date(dateStr);
     if (period === 'month') return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
     if (period === 'lastmonth') {
       const lm = new Date(now.getFullYear(), now.getMonth() - 1, 1);
@@ -165,7 +175,7 @@ export default function Spend({
     .sort(compare);
 
   const filteredTotal = filtered.reduce((s, t) => s + t.amount, 0);
-  const periodLabel = { month: 'This Month', lastmonth: 'Last Month', '3m': 'Last 3 Months', all: 'All Time' }[period];
+  const periodLabel = { today: 'Today', week: 'This Week', month: 'This Month', lastmonth: 'Last Month', '3m': 'Last 3 Months', all: 'All Time' }[period];
 
   if (transactions.length === 0) {
     return (
@@ -276,6 +286,8 @@ export default function Spend({
             leading={<Calendar size={15} className="text-[#9ca3af]" />}
             value={periodLabel}
             options={[
+              { label: 'Today', value: 'today' },
+              { label: 'This Week', value: 'week' },
               { label: 'This Month', value: 'month' },
               { label: 'Last Month', value: 'lastmonth' },
               { label: 'Last 3 Months', value: '3m' },

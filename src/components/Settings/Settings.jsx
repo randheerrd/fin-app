@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Shield, LogOut, Plus } from 'lucide-react';
+import { Shield, LogOut, Plus, LifeBuoy, Mail, MessageSquareText, BookOpen } from 'lucide-react';
 import BrandLogo from '../BrandLogo';
 import { bankBrand } from '../../lib/logos';
 import { groupINR, digitsOnly } from '../../lib/utils';
@@ -45,6 +45,7 @@ export default function Settings({
   setTransactions,
   onLogout,
   startInEdit = false,
+  phone = '',
 }) {
   const [showAddBank, setShowAddBank] = useState(false);
   const [showExport, setShowExport] = useState(false);
@@ -69,8 +70,10 @@ export default function Settings({
   };
   const saveProfile = () => {
     setProfile({ fullName: draft.fullName, email: draft.email, mobile: draft.mobile, city: draft.city });
-    setIncome(parseFloat(draft.income) || income);
-    setBudget(parseFloat(draft.budget) || budget);
+    // Empty/invalid input means "not set" (0), so the field can be cleared — don't
+    // fall back to the previous value, which made income/budget impossible to reset.
+    setIncome(Number.isFinite(parseFloat(draft.income)) ? parseFloat(draft.income) : 0);
+    setBudget(Number.isFinite(parseFloat(draft.budget)) ? parseFloat(draft.budget) : 0);
     setEditingProfile(false);
   };
 
@@ -324,7 +327,7 @@ export default function Settings({
           </div>
 
           {/* Data & privacy */}
-          <div className={cardClass}>
+          <div className={`${cardClass} overflow-hidden`}>
             <SectionLabel>Data &amp; Privacy</SectionLabel>
             <div className="px-6 pb-5 space-y-4">
               <div className="flex items-center justify-between gap-4">
@@ -357,18 +360,56 @@ export default function Settings({
                 </button>
               </div>
             </div>
+            {/* Protection band — attached to the bottom of Data & Privacy */}
+            <div className="bg-[#f0f7f3] px-6 py-5 flex gap-3 border-t border-[#e3efe8]">
+              <Shield size={18} className="text-[#0E3F2E] flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-semibold text-[#111827] mb-1">Your money data is protected</p>
+                <p className="text-xs text-[#6b7280] leading-relaxed">
+                  Connections run through RBI's regulated Account Aggregator network with 256-bit encryption.
+                  Access is read-only — we can see transactions, never move money. Your bank credentials never
+                  touch our servers, and you can revoke any connection in one tap.
+                </p>
+              </div>
+            </div>
           </div>
 
-          {/* Protection footer */}
-          <div className="bg-[#f0f7f3] rounded-2xl px-6 py-5 flex gap-3">
-            <Shield size={18} className="text-[#0E3F2E] flex-shrink-0 mt-0.5" />
-            <div>
-              <p className="text-sm font-semibold text-[#111827] mb-1">Your money data is protected</p>
-              <p className="text-xs text-[#6b7280] leading-relaxed">
-                Connections run through RBI's regulated Account Aggregator network with 256-bit encryption.
-                Access is read-only — we can see transactions, never move money. Your bank credentials never
-                touch our servers, and you can revoke any connection in one tap.
-              </p>
+          {/* Help & Support */}
+          <div className={cardClass}>
+            <SectionLabel>Help &amp; Support</SectionLabel>
+            <div className="px-6 pb-5">
+              <div className="space-y-1">
+                {[
+                  { icon: BookOpen, title: 'Help center', desc: 'Guides on goals, budgets & bank linking', href: 'https://fintheapp.vercel.app' },
+                  { icon: Mail, title: 'Email support', desc: 'support@finapp.app — we reply within a day', href: 'mailto:support@finapp.app' },
+                  {
+                    icon: MessageSquareText,
+                    title: 'Send feedback',
+                    desc: 'Tell us what to build next',
+                    href: 'mailto:support@finapp.app?subject=FinApp%20feedback',
+                  },
+                ].map(({ icon: Icon, title, desc, href }) => (
+                  <a
+                    key={title}
+                    href={href}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex items-center gap-3 py-2.5 rounded-lg hover:bg-[#f9fafb] transition-colors -mx-2 px-2"
+                  >
+                    <span className="w-9 h-9 rounded-lg bg-[#F0F7F3] flex items-center justify-center flex-shrink-0">
+                      <Icon size={17} className="text-[#0E3F2E]" />
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-[#111827]">{title}</p>
+                      <p className="text-xs text-[#9ca3af]">{desc}</p>
+                    </div>
+                  </a>
+                ))}
+              </div>
+
+              <div className="flex items-center gap-2 mt-4 pt-4 border-t border-[#f0f1f3] text-xs text-[#9ca3af]">
+                <LifeBuoy size={14} /> FinApp · v1.0.0
+              </div>
             </div>
           </div>
 
@@ -413,7 +454,9 @@ export default function Settings({
         </div>
       )}
 
-      {showAddBank && <AddBankModal onClose={() => setShowAddBank(false)} onAdd={handleAddBank} />}
+      {showAddBank && (
+        <AddBankModal onClose={() => setShowAddBank(false)} onAdd={handleAddBank} verifiedPhone={phone} />
+      )}
       {showExport && <ExportDataModal transactions={transactions} onClose={() => setShowExport(false)} />}
     </div>
   );

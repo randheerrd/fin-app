@@ -4,7 +4,7 @@ import BrandLogo from '../BrandLogo';
 import { bankBrand } from '../../lib/logos';
 import AddBankModal from '../modals/AddBankModal';
 
-export default function StepAccountSelect({ accounts, selected, onToggle, onContinue, onSkip, onBack, onAddAnother }) {
+export default function StepAccountSelect({ accounts, selected, onToggle, onContinue, onSkip, onBack, onAddAnother, phone }) {
   const [showAdd, setShowAdd] = useState(false);
   const selectedCount = selected.filter(Boolean).length;
 
@@ -60,6 +60,7 @@ export default function StepAccountSelect({ accounts, selected, onToggle, onCont
       {showAdd && (
         <AddBankModal
           onClose={() => setShowAdd(false)}
+          verifiedPhone={phone}
           onAdd={(data) => {
             onAddAnother(data);
             setShowAdd(false);
