@@ -111,7 +111,17 @@ export function useOtpAuth(recaptchaContainerId) {
       }
     } catch (e) {
       console.error(e);
-      setError('Invalid code. Please try again.');
+      if (e?.code === 'auth/code-expired') {
+        setError('Code expired. Tap Resend for a new one.');
+      } else if (e?.code === 'auth/invalid-verification-code') {
+        setError('Invalid code. Please try again.');
+      } else if (e?.code === 'auth/too-many-requests') {
+        setError('Too many attempts. Please wait a bit and try again.');
+      } else if (e?.code) {
+        setError(`Couldn't verify — ${e.code}`);
+      } else {
+        setError(e?.message && e.message !== 'invalid-code' ? e.message : 'Invalid code. Please try again.');
+      }
       setLoading(false);
     }
   };
