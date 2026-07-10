@@ -19,5 +19,6 @@ export default async function handler(req, res) {
   };
 
   const r = await setu('/sessions', { method: 'POST', body });
+  if (!r.ok) console.error('AA session creation failed:', JSON.stringify(r.data));
   return res.status(r.status).json(r.data);
 }
