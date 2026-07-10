@@ -26,7 +26,7 @@ export default function StepDiscovery({ mobile, token, income, budget, goal, onC
           if (!result?.id || !result?.url) {
             throw new Error(result?.errorMsg || result?.error || 'Could not start the bank connection');
           }
-          localStorage.setItem('aa_pending', JSON.stringify({ consentId: result.id, income, budget, goal }));
+          localStorage.setItem('aa_pending', JSON.stringify({ consentId: result.id, income, budget, goal, phone: mobile }));
           window.location.href = result.url;
         } catch (e) {
           console.error(e);

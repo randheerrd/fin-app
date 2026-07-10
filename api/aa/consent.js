@@ -30,7 +30,7 @@ export default async function handler(req, res) {
       category: { type: 'Personal Finance' },
       refUri: 'https://api.rebit.org.in/aa/purpose/101.xml',
     },
-    // Virtual User Address. Sandbox test handle: <mobile>@onemoney
+    // Virtual User Address. <mobile>@onemoney routes to the OneMoney AA partner.
     vua: `${mobile}@onemoney`,
     ...(redirectUrl ? { redirectUrl } : {}),
   };

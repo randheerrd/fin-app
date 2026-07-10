@@ -54,6 +54,11 @@ function App() {
   const [aaImport, setAaImport] = useState(() =>
     aaEnabled && localStorage.getItem('aa_pending') ? 'importing' : 'idle'
   );
+  // Onboarding data (income/budget/goal/phone) stashed before the redirect to Setu —
+  // the whole app reloads on return, wiping React state, so if the import then fails
+  // we use this to resume onboarding in manual mode instead of dumping the user back
+  // to the landing page and losing everything they'd already entered.
+  const [aaResumeData, setAaResumeData] = useState(null);
 
   // UI state
   const [activeView, setActiveView] = useState('dashboard');
@@ -90,6 +95,10 @@ function App() {
         setAaImport('idle');
         return;
       }
+      // Only onboarding's StepDiscovery stashes income/budget/goal/phone (the
+      // in-app AddBankModal only stashes consentId) — that's how we tell whether
+      // a failure needs to resume onboarding vs. just return to the dashboard.
+      if (pending.income !== undefined) setAaResumeData(pending);
       try {
         const consent = await waitForConsent(pending.consentId);
         if (consent.status === 'REJECTED') {
@@ -610,6 +619,25 @@ function App() {
     }
   };
 
+  // After a failed/declined AA import, either resume onboarding in manual mode
+  // (if we stashed income/budget/goal before redirecting to Setu) or, for an
+  // already-onboarded user connecting an extra bank, just dismiss back to the
+  // dashboard — either way, never drop back to the landing/login screen.
+  const dismissAaImport = () => {
+    if (aaResumeData) {
+      setLandingDone(true);
+      handleOnboardingComplete({
+        income: aaResumeData.income,
+        budget: aaResumeData.budget,
+        goal: aaResumeData.goal,
+        banks: [],
+        phone: aaResumeData.phone,
+      });
+      setAaResumeData(null);
+    }
+    setAaImport('idle');
+  };
+
   // Setu AA import screen (after returning from the bank approval page).
   if (aaImport !== 'idle') {
     return (
@@ -628,21 +656,24 @@ function App() {
               accounts manually instead.
             </p>
             <button
-              onClick={() => setAaImport('idle')}
+              onClick={dismissAaImport}
               className="px-5 py-2.5 bg-[#0E3F2E] text-white text-sm font-medium rounded-lg hover:bg-[#0a3122] transition-colors"
             >
-              Back to start
+              {aaResumeData ? 'Continue manually' : 'Back to dashboard'}
             </button>
           </>
         ) : (
           <>
             <p className="font-display text-2xl text-[#111827] mb-2">Couldn’t import your data</p>
-            <p className="text-sm text-[#6b7280] mb-6">The bank connection timed out or ran into an error.</p>
+            <p className="text-sm text-[#6b7280] mb-6">
+              The bank connection timed out or ran into an error. You can try again anytime, or add accounts manually
+              instead.
+            </p>
             <button
-              onClick={() => setAaImport('idle')}
+              onClick={dismissAaImport}
               className="px-5 py-2.5 bg-[#0E3F2E] text-white text-sm font-medium rounded-lg hover:bg-[#0a3122] transition-colors"
             >
-              Back to start
+              {aaResumeData ? 'Continue manually' : 'Back to dashboard'}
             </button>
           </>
         )}
