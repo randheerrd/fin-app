@@ -99,7 +99,7 @@ export function useOtpAuth(recaptchaContainerId) {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ phone, code }),
         });
-        const data = await r.json();
+        const data = await r.json().catch(() => ({}));
         if (!r.ok || !data.verified) throw new Error(data.error || 'invalid-code');
         if (data.customToken) await signInWithCustomToken(auth, data.customToken);
         onVerified(phone);

@@ -3,8 +3,12 @@
 // real Firebase-authenticated uid). Runs ONLY on the server.
 // Optional: if these env vars aren't set, mintCustomToken resolves to null
 // and the client just proceeds without a Firestore-backed session.
-import { initializeApp, cert, getApps } from 'firebase-admin/app';
-import { getAuth } from 'firebase-admin/auth';
+//
+// `firebase-admin` is imported lazily (only inside mintCustomToken, only once
+// enabled) because a static top-level import loads it as soon as any file that
+// imports this module loads — which crashed every /api/otp/verify call in
+// production (Error [ERR_REQUIRE_ESM]) even when Firebase Admin creds weren't
+// set and this code path would never run.
 
 export function firebaseAdminEnabled() {
   return Boolean(
@@ -13,8 +17,9 @@ export function firebaseAdminEnabled() {
 }
 
 let app = null;
-function getAdminApp() {
+async function getAdminApp() {
   if (!app) {
+    const { initializeApp, cert, getApps } = await import('firebase-admin/app');
     app =
       getApps()[0] ||
       initializeApp({
@@ -30,5 +35,6 @@ function getAdminApp() {
 
 export async function mintCustomToken(uid) {
   if (!firebaseAdminEnabled()) return null;
-  return getAuth(getAdminApp()).createCustomToken(uid);
+  const { getAuth } = await import('firebase-admin/auth');
+  return getAuth(await getAdminApp()).createCustomToken(uid);
 }
