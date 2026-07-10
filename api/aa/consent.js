@@ -32,6 +32,10 @@ export default async function handler(req, res) {
     },
     // Virtual User Address. <mobile>@onemoney routes to the OneMoney AA partner.
     vua: `${mobile}@onemoney`,
+    // Forces account discovery straight to the "Setu FIP 2" mock bank (static OTP
+    // 123456) so local/QA testing doesn't need a real phone number or OneMoney's
+    // test-number whitelisting (1-2 business day turnaround).
+    context: [{ key: 'fipId', value: 'setu-fip-2' }],
     ...(redirectUrl ? { redirectUrl } : {}),
   };
 
