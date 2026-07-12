@@ -1,6 +1,8 @@
 // Client helper for the Setu AA proxy (/api/aa/*).
 // Enabled when VITE_AA_API_URL is set (e.g. "/api/aa"); otherwise the app uses
 // the demo mock. The secret lives only on the server function — never here.
+import { categorizeSync } from './categorize';
+
 const BASE = import.meta.env.VITE_AA_API_URL || '';
 export const aaEnabled = Boolean(BASE);
 
@@ -63,32 +65,28 @@ function findTransactions(node, out = []) {
   return out;
 }
 
-const KEYWORDS = [
-  [/swiggy|zomato|domino|pizza|restaurant|food|cafe/i, 'food'],
-  [/uber|ola|rapido|metro|fuel|petrol|transport/i, 'transport'],
-  [/amazon|flipkart|myntra|shop/i, 'shopping'],
-  [/netflix|spotify|prime|subscription/i, 'subscriptions'],
-  [/blinkit|zepto|instamart|grocery|bigbasket|dmart/i, 'groceries'],
-  [/pharmacy|apollo|hospital|medical|health/i, 'health'],
-];
-function categorize(narration = '') {
-  for (const [re, cat] of KEYWORDS) if (re.test(narration)) return cat;
-  return 'cash';
-}
-
 // Map raw FI data → FinApp transactions. Imports DEBIT entries as expenses.
+// `category` is left null when neither learned overrides nor keyword rules
+// can resolve it — the caller (App.jsx) sends those to AI categorization
+// and only then falls back to 'cash'. See lib/categorize.js and lib/aiCategorize.js.
 export function mapTransactions(fiData) {
   return findTransactions(fiData)
     .filter((t) => String(t.type || 'DEBIT').toUpperCase() === 'DEBIT')
-    .map((t) => ({
-      id: crypto.randomUUID(),
-      date: (t.transactionTimestamp || t.valueDate || new Date().toISOString()).slice(0, 10),
-      merchant: (t.narration || 'Bank transaction').toString().slice(0, 60),
-      category: categorize(t.narration),
-      amount: Math.abs(Number(t.amount) || 0),
-      source: 'bank',
-      atm: false,
-    }))
+    .map((t) => {
+      const resolved = categorizeSync(t.narration);
+      return {
+        id: crypto.randomUUID(),
+        date: (t.transactionTimestamp || t.valueDate || new Date().toISOString()).slice(0, 10),
+        merchant: (t.narration || 'Bank transaction').toString().slice(0, 60),
+        category: resolved ?? 'cash',
+        // Set only when neither learned overrides nor keyword rules resolved
+        // it — App.jsx sends these to AI categorization and clears the flag.
+        ...(resolved ? {} : { aiPending: true }),
+        amount: Math.abs(Number(t.amount) || 0),
+        source: 'bank',
+        atm: false,
+      };
+    })
     .filter((t) => t.amount > 0)
     .sort((a, b) => new Date(b.date) - new Date(a.date));
 }

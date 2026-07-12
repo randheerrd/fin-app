@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { X, Trash2, Check } from 'lucide-react';
-import { CATEGORIES } from '../../data/categories';
+import { X, Trash2, Check, Plus } from 'lucide-react';
+import { CATEGORIES, addCustomCategory } from '../../data/categories';
 import { getToday, groupINR, digitsOnly } from '../../lib/utils';
 import CategoryIcon from '../CategoryIcon';
 import DatePicker from '../DatePicker';
@@ -16,6 +16,20 @@ export default function AddExpenseModal({ onClose, onSave, onDelete, initial }) 
   const [category, setCategory] = useState(initial?.category || 'food');
   const [date, setDate] = useState(initial?.date || getToday());
   const [note, setNote] = useState(initial?.merchant || '');
+  // "Other" pill reveals this inline field instead of picking an existing
+  // category — typing a name and confirming turns it into a real, reusable
+  // category (saved to this browser only) via addCustomCategory().
+  const [showOtherInput, setShowOtherInput] = useState(false);
+  const [otherName, setOtherName] = useState('');
+
+  const confirmOtherCategory = () => {
+    const cat = addCustomCategory(otherName);
+    if (cat) {
+      setCategory(cat.id);
+      setShowOtherInput(false);
+      setOtherName('');
+    }
+  };
 
   const handleSave = () => {
     if (amount && parseFloat(amount) > 0) {
@@ -93,7 +107,10 @@ export default function AddExpenseModal({ onClose, onSave, onDelete, initial }) 
                 return (
                   <button
                     key={cat.id}
-                    onClick={() => setCategory(cat.id)}
+                    onClick={() => {
+                      setCategory(cat.id);
+                      setShowOtherInput(false);
+                    }}
                     className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full border text-sm transition-colors ${
                       active
                         ? 'bg-[#0E3F2E] border-[#0E3F2E] text-white'
@@ -105,7 +122,38 @@ export default function AddExpenseModal({ onClose, onSave, onDelete, initial }) 
                   </button>
                 );
               })}
+              <button
+                onClick={() => setShowOtherInput(true)}
+                className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full border text-sm transition-colors ${
+                  showOtherInput
+                    ? 'bg-[#0E3F2E] border-[#0E3F2E] text-white'
+                    : 'bg-white border-[#e5e7eb] text-[#374151] hover:bg-[#f9fafb]'
+                }`}
+              >
+                <Plus size={14} />
+                Other
+              </button>
             </div>
+            {showOtherInput && (
+              <div className="flex items-center gap-2 mt-2.5">
+                <input
+                  autoFocus
+                  type="text"
+                  placeholder="Name your category"
+                  value={otherName}
+                  onChange={(e) => setOtherName(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && confirmOtherCategory()}
+                  className="flex-1 px-3.5 py-2 border border-[#e5e7eb] rounded-lg text-sm text-[#111827] outline-none focus:border-[#0E3F2E] placeholder:text-[#9ca3af]"
+                />
+                <button
+                  onClick={confirmOtherCategory}
+                  disabled={!otherName.trim()}
+                  className="px-4 py-2 bg-[#0E3F2E] text-white text-sm font-medium rounded-lg hover:bg-[#0a3122] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  Add
+                </button>
+              </div>
+            )}
           </div>
         </div>
 

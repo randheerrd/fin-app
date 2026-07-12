@@ -1,4 +1,4 @@
-import { Search, Home, CreditCard, Target, Sparkles, ChevronsUpDown } from 'lucide-react';
+import { Search, Home, CreditCard, Target, Sparkles, Settings } from 'lucide-react';
 import FinAppLogo from './FinAppLogo';
 
 const NAV_ITEMS = [
@@ -53,7 +53,7 @@ export default function Sidebar({ activeView, setActiveView, onSearch }) {
           <span className="text-white text-xs font-bold">RK</span>
         </div>
         <span className="text-white text-sm font-medium flex-1 text-left truncate">Randheer Kumar</span>
-        <ChevronsUpDown size={15} className="text-white/40" />
+        <Settings size={15} className="text-white/40" />
       </button>
     </div>
   );

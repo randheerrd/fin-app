@@ -21,6 +21,8 @@ import { getToday } from './lib/utils';
 import { firebaseEnabled, logout } from './lib/firebase';
 import { onUser, loadUserData, saveUserData } from './lib/userData';
 import { aaEnabled, waitForConsent, createSession, waitForData, mapTransactions } from './lib/setu';
+import { resolveAiPendingCategories } from './lib/aiCategorize';
+import { learnCategory } from './lib/categorize';
 import {
   FRESH_DEMO_PHONE,
   isDemoPhone,
@@ -110,7 +112,18 @@ function App() {
         if (consent.status !== 'ACTIVE') throw new Error('Consent not approved');
         const session = await createSession(pending.consentId);
         const data = await waitForData(session.id);
-        setTransactions(mapTransactions(data));
+        const mapped = mapTransactions(data);
+        setTransactions(mapped);
+        // Transactions the keyword rules couldn't place are shown as 'cash'
+        // immediately, then re-categorized via AI in the background.
+        if (mapped.some((t) => t.aiPending)) {
+          resolveAiPendingCategories(mapped).then((resolved) => {
+            const byId = new Map(resolved.map((t) => [t.id, t.category]));
+            setTransactions((prev) =>
+              prev.map((t) => (t.aiPending && byId.has(t.id) ? { ...t, category: byId.get(t.id), aiPending: undefined } : t))
+            );
+          });
+        }
         if (pending.income) setIncome(pending.income);
         if (pending.budget) setBudget(pending.budget);
         if (pending.goal) setGoals([{ id: crypto.randomUUID(), ...pending.goal, isNew: true, detected: false }]);
@@ -357,7 +370,16 @@ function App() {
   const updateTransaction = (updated) => {
     setTransactions((prev) =>
       prev
-        .map((t) => (t.id === updated.id ? { ...t, ...updated } : t))
+        .map((t) => {
+          if (t.id !== updated.id) return t;
+          // Recategorizing a bank-imported transaction teaches the merchant →
+          // category mapping, so the same merchant resolves correctly next
+          // time without hitting the keyword rules or AI again.
+          if (updated.category && updated.category !== t.category && t.source === 'bank') {
+            learnCategory(t.merchant, updated.category);
+          }
+          return { ...t, ...updated };
+        })
         .sort((a, b) => new Date(b.date) - new Date(a.date))
     );
     showToast('Transaction updated', 'success');
