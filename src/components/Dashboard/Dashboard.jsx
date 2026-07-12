@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ChevronRight, Plus, Calendar, Target } from 'lucide-react';
+import { ChevronRight, ChevronDown, Plus, Calendar, Target, Receipt } from 'lucide-react';
 import {
   getTotalSpent,
   getTopCategories,
@@ -169,6 +169,51 @@ function WeeklyChart({ transactions }) {
           Weekdays, you barely touch the budget.
         </p>
       </div>
+    </div>
+  );
+}
+
+/* ---------- Add split button (Add Expense / Add Goal) ---------- */
+function AddMenu({ onAddExpense, onAddGoal }) {
+  const [open, setOpen] = useState(false);
+  const close = () => setOpen(false);
+  return (
+    <div className="relative">
+      <button
+        onClick={() => setOpen((o) => !o)}
+        className="flex items-center gap-2 px-4 py-2.5 bg-[#0E3F2E] text-white text-sm font-medium rounded-lg hover:bg-[#0a3122] transition-colors"
+      >
+        <Plus size={16} />
+        Add
+        <ChevronDown size={15} className={`transition-transform ${open ? 'rotate-180' : ''}`} />
+      </button>
+      {open && (
+        <>
+          <div className="fixed inset-0 z-10" onClick={close} />
+          <div className="absolute right-0 mt-1 z-20 bg-white border border-[#e5e7eb] rounded-lg shadow-lg py-1 min-w-[170px]">
+            <button
+              onClick={() => {
+                close();
+                onAddExpense();
+              }}
+              className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-sm text-[#374151] hover:bg-[#f9fafb] transition-colors"
+            >
+              <Receipt size={15} className="text-[#9ca3af]" />
+              Add Expense
+            </button>
+            <button
+              onClick={() => {
+                close();
+                onAddGoal();
+              }}
+              className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-sm text-[#374151] hover:bg-[#f9fafb] transition-colors"
+            >
+              <Target size={15} className="text-[#9ca3af]" />
+              Add Goal
+            </button>
+          </div>
+        </>
+      )}
     </div>
   );
 }
@@ -349,13 +394,7 @@ export default function Dashboard({
             ]}
             onChange={setPeriod}
           />
-          <button
-            onClick={onAddExpense}
-            className="flex items-center gap-2 px-4 py-2.5 bg-[#0E3F2E] text-white text-sm font-medium rounded-lg hover:bg-[#0a3122] transition-colors"
-          >
-            <Plus size={16} />
-            Add Expense
-          </button>
+          <AddMenu onAddExpense={onAddExpense} onAddGoal={onAddGoal} />
         </div>
       </div>
 
@@ -543,18 +582,7 @@ export default function Dashboard({
 
         {/* Goals */}
         <div className="border border-[#ECEEF0] rounded-2xl shadow-[0_1px_2px_rgba(16,24,40,0.04)] p-6">
-          <div className="flex items-center justify-between mb-4">
-            <p className="text-xs uppercase tracking-wide text-[#9ca3af] font-medium">Goals</p>
-            {goals.length > 0 && (
-              <button
-                onClick={onAddGoal}
-                className="inline-flex items-center gap-1 text-xs font-medium text-[#0E3F2E] hover:underline"
-              >
-                <Plus size={13} />
-                Add Goal
-              </button>
-            )}
-          </div>
+          <p className="text-xs uppercase tracking-wide text-[#9ca3af] font-medium mb-4">Goals</p>
           {goals.length === 0 ? (
             <div className="flex flex-col items-center justify-center text-center py-8">
               <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#F0F7F3] to-[#E3F0E9] ring-1 ring-[#0E3F2E]/10 flex items-center justify-center mb-3">
