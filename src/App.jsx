@@ -13,6 +13,7 @@ import Settings from './components/Settings/Settings';
 import AddExpenseModal from './components/modals/AddExpenseModal';
 import AtmSplitModal from './components/modals/AtmSplitModal';
 import AddBankModal from './components/modals/AddBankModal';
+import AddGoalModal from './components/Goals/AddGoalModal';
 import SearchModal from './components/SearchModal';
 import Toast from './components/Toast';
 import { enrichTransactionsWithIds, BANK_TRANSACTIONS, INITIAL_RECURRING } from './data/seed';
@@ -76,6 +77,7 @@ function App() {
   const [showAddExpense, setShowAddExpense] = useState(false);
   const [showAtmSplit, setShowAtmSplit] = useState(false);
   const [showConnectBank, setShowConnectBank] = useState(false);
+  const [showAddGoal, setShowAddGoal] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
   const [toast, setToast] = useState(null);
   const mainContentRef = useRef(null);
@@ -526,7 +528,7 @@ function App() {
               setSettingsEdit(true);
               setActiveView('settings');
             }}
-            onAddGoal={() => setActiveView('goals')}
+            onAddGoal={() => setShowAddGoal(true)}
             onCategorySelect={(cats, p) => {
               setSpendSearch('');
               setSpendCategories(cats);
@@ -732,6 +734,13 @@ function App() {
 
       {showConnectBank && (
         <AddBankModal onClose={() => setShowConnectBank(false)} onAdd={connectBank} verifiedPhone={phone} />
+      )}
+
+      {showAddGoal && (
+        <AddGoalModal
+          onClose={() => setShowAddGoal(false)}
+          onSave={(d) => { addGoal(d); setShowAddGoal(false); }}
+        />
       )}
 
       {/* Search */}

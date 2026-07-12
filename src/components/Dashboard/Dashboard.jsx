@@ -543,7 +543,18 @@ export default function Dashboard({
 
         {/* Goals */}
         <div className="border border-[#ECEEF0] rounded-2xl shadow-[0_1px_2px_rgba(16,24,40,0.04)] p-6">
-          <p className="text-xs uppercase tracking-wide text-[#9ca3af] font-medium mb-4">Goals</p>
+          <div className="flex items-center justify-between mb-4">
+            <p className="text-xs uppercase tracking-wide text-[#9ca3af] font-medium">Goals</p>
+            {goals.length > 0 && (
+              <button
+                onClick={onAddGoal}
+                className="inline-flex items-center gap-1 text-xs font-medium text-[#0E3F2E] hover:underline"
+              >
+                <Plus size={13} />
+                Add Goal
+              </button>
+            )}
+          </div>
           {goals.length === 0 ? (
             <div className="flex flex-col items-center justify-center text-center py-8">
               <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#F0F7F3] to-[#E3F0E9] ring-1 ring-[#0E3F2E]/10 flex items-center justify-center mb-3">
