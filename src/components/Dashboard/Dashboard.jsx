@@ -181,11 +181,13 @@ function AddMenu({ onAddExpense, onAddGoal }) {
     <div className="relative">
       <button
         onClick={() => setOpen((o) => !o)}
-        className="flex items-center gap-2 px-4 py-2.5 bg-[#0E3F2E] text-white text-sm font-medium rounded-lg hover:bg-[#0a3122] transition-colors"
+        className="flex items-center bg-[#0E3F2E] text-white text-sm font-medium rounded-lg hover:bg-[#0a3122] transition-colors"
       >
-        <Plus size={16} />
-        Add
-        <ChevronDown size={15} className={`transition-transform ${open ? 'rotate-180' : ''}`} />
+        <span className="px-4 py-2.5">Add</span>
+        <span className="w-px self-stretch bg-white/20" />
+        <span className="px-2.5 py-2.5">
+          <ChevronDown size={15} className={`transition-transform ${open ? 'rotate-180' : ''}`} />
+        </span>
       </button>
       {open && (
         <>
