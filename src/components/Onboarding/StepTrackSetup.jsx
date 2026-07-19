@@ -8,7 +8,8 @@ export default function StepTrackSetup({ onAction }) {
 
   const incomeNum = parseInt(income.replace(/,/g, ''), 10) || 0;
   const budgetNum = parseInt(budget.replace(/,/g, ''), 10) || 0;
-  const canContinue = incomeNum > 0 && budgetNum > 0; // both required to proceed
+  const overBudget = incomeNum > 0 && budgetNum > incomeNum;
+  const canContinue = incomeNum > 0 && budgetNum > 0 && !overBudget; // both required to proceed
 
   const handleContinue = () => {
     if (!canContinue) return;
@@ -43,8 +44,17 @@ export default function StepTrackSetup({ onAction }) {
             placeholder="50,000"
             value={groupINR(budget)}
             onChange={(e) => setBudget(digitsOnly(e.target.value))}
-            className="w-full px-4 py-2.5 border border-[#e5e7eb] rounded-lg text-[#111827] text-sm placeholder-[#9ca3af] focus:border-[#0E3F2E] focus:ring-1 focus:ring-[#0E3F2E]/20 transition-colors"
+            className={`w-full px-4 py-2.5 border rounded-lg text-[#111827] text-sm placeholder-[#9ca3af] focus:ring-1 transition-colors ${
+              overBudget
+                ? 'border-red-300 focus:border-red-400 focus:ring-red-400/20'
+                : 'border-[#e5e7eb] focus:border-[#0E3F2E] focus:ring-[#0E3F2E]/20'
+            }`}
           />
+          {overBudget && (
+            <p className="text-xs text-red-500 mt-1.5">
+              Budget can't be more than your monthly income (₹{incomeNum.toLocaleString('en-IN')}).
+            </p>
+          )}
         </div>
       </div>
 

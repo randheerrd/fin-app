@@ -68,12 +68,16 @@ export default function Settings({
     setDraft({ ...profile, income: income > 0 ? String(income) : '', budget: budget > 0 ? String(budget) : '' });
     setEditingProfile(true);
   };
+  const draftIncome = Number.isFinite(parseFloat(draft.income)) ? parseFloat(draft.income) : 0;
+  const draftBudget = Number.isFinite(parseFloat(draft.budget)) ? parseFloat(draft.budget) : 0;
+  const overBudget = draftIncome > 0 && draftBudget > draftIncome;
   const saveProfile = () => {
+    if (overBudget) return;
     setProfile({ fullName: draft.fullName, email: draft.email, mobile: draft.mobile, city: draft.city });
     // Empty/invalid input means "not set" (0), so the field can be cleared — don't
     // fall back to the previous value, which made income/budget impossible to reset.
-    setIncome(Number.isFinite(parseFloat(draft.income)) ? parseFloat(draft.income) : 0);
-    setBudget(Number.isFinite(parseFloat(draft.budget)) ? parseFloat(draft.budget) : 0);
+    setIncome(draftIncome);
+    setBudget(draftBudget);
     setEditingProfile(false);
   };
 
@@ -198,7 +202,11 @@ export default function Settings({
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-[#374151] mb-1.5">Monthly Budget</label>
-                    <div className="flex items-center border border-[#e5e7eb] rounded-lg overflow-hidden focus-within:border-[#0E3F2E]">
+                    <div
+                      className={`flex items-center border rounded-lg overflow-hidden focus-within:border-[#0E3F2E] ${
+                        overBudget ? 'border-red-300' : 'border-[#e5e7eb]'
+                      }`}
+                    >
                       <span className="pl-3.5 text-[#9ca3af] text-sm">₹</span>
                       <input
                         type="text"
@@ -208,6 +216,11 @@ export default function Settings({
                         className="flex-1 px-2 py-2.5 text-sm text-[#111827] outline-none bg-white"
                       />
                     </div>
+                    {overBudget && (
+                      <p className="text-xs text-red-500 mt-1.5">
+                        Budget can't be more than your monthly income (₹{draftIncome.toLocaleString('en-IN')}).
+                      </p>
+                    )}
                   </div>
                 </div>
                 <div className="flex gap-3 mt-5">
@@ -219,7 +232,8 @@ export default function Settings({
                   </button>
                   <button
                     onClick={saveProfile}
-                    className="px-5 py-2.5 bg-[#0E3F2E] text-white text-sm font-medium rounded-lg hover:bg-[#0a3122] transition-colors"
+                    disabled={overBudget}
+                    className="px-5 py-2.5 bg-[#0E3F2E] text-white text-sm font-medium rounded-lg hover:bg-[#0a3122] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                   >
                     Save Changes
                   </button>
