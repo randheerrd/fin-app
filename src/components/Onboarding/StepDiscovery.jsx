@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import accountAggregatorAPI from '../../lib/api';
 import { isDemoPhone } from '../../data/demoSeed';
-import { createConsent } from '../../lib/setu';
+import { createConsent, aaEnabled } from '../../lib/setu';
 
 const MOCK_ACCOUNTS = [
   { bank: 'HDFC Bank', type: 'Salary account', mask: '··4521' },
@@ -9,9 +9,12 @@ const MOCK_ACCOUNTS = [
   { bank: 'ICICI Bank', type: 'Saving account', mask: '··2291' },
 ];
 
-// Demo phones get an instant mock discovery. Any real number kicks off the
-// actual Setu AA consent flow and redirects to the approval page — App.jsx
-// picks the import back up when the user returns (looks for `aa_pending`).
+// Demo phones get an instant mock discovery. On a local dev server with AA
+// configured (`aaEnabled`), any real number kicks off the actual Setu AA
+// consent flow and redirects to the approval page — App.jsx picks the import
+// back up when the user returns (looks for `aa_pending`). On production
+// builds, real bank-connect is disabled — a real number falls straight
+// through to manual entry instead, same as a failed/declined AA attempt.
 export default function StepDiscovery({ mobile, token, income, budget, goal, onComplete }) {
   const [message, setMessage] = useState(() =>
     isDemoPhone(mobile) ? 'Connecting to HDFC Bank…' : 'Redirecting to your bank via the Account Aggregator…'
@@ -19,6 +22,10 @@ export default function StepDiscovery({ mobile, token, income, budget, goal, onC
   const [error, setError] = useState('');
 
   useEffect(() => {
+    if (!isDemoPhone(mobile) && !aaEnabled) {
+      onComplete([]);
+      return;
+    }
     if (!isDemoPhone(mobile)) {
       (async () => {
         try {

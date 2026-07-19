@@ -1,10 +1,14 @@
 // Client helper for the Setu AA proxy (/api/aa/*).
-// Enabled when VITE_AA_API_URL is set (e.g. "/api/aa"); otherwise the app uses
-// the demo mock. The secret lives only on the server function — never here.
+// Enabled when VITE_AA_API_URL is set (e.g. "/api/aa") AND running via the
+// local Vite dev server — otherwise the app uses manual entry only. Real
+// bank-connect is intentionally kept local-only for now (not exposed on
+// production builds), regardless of whether VITE_AA_API_URL is set, since
+// `import.meta.env.DEV` is only true under `vite dev`, never in `vite build`.
+// The secret itself lives only on the server function — never here either way.
 import { categorizeSync } from './categorize';
 
 const BASE = import.meta.env.VITE_AA_API_URL || '';
-export const aaEnabled = Boolean(BASE);
+export const aaEnabled = Boolean(BASE) && import.meta.env.DEV;
 
 async function post(path, body) {
   const r = await fetch(`${BASE}${path}`, {
